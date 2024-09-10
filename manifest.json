@@ -1,0 +1,10 @@
+{
+    "id": "obsidian-catalog-plugin",
+    "name": "Каталог товаров",
+    "version": "0.1.0",
+    "minAppVersion": "0.15.0",
+    "description": "Плагин для создания и управления каталогом товаров в Obsidian с возможностью фильтрации, сортировки и создания новых элементов.",
+    "author": "Alex Novikov",
+    "authorUrl": "https://github.com/Headcrab",
+    "isDesktopOnly": false
+}
