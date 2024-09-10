@@ -1,0 +1,192 @@
+/* Альтернативный CSS для плагина каталога */
+
+/* Основной контейнер каталога */
+.catalog-container {
+    padding: 30px;
+    background-color: #1a2634;
+    color: #e0e0e0;
+    border-radius: 15px;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
+}
+
+/* Заголовок каталога */
+.catalog-title {
+    font-size: 28px;
+    color: #4db6ac;
+    margin-bottom: 30px;
+    text-align: center;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+}
+
+/* Стили для элементов управления */
+.catalog-controls {
+    margin-bottom: 30px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    background-color: #263238;
+    padding: 20px;
+    border-radius: 10px;
+}
+
+/* Поля ввода для фильтров */
+.catalog-filter-input {
+    padding: 12px;
+    border: 2px solid #4db6ac;
+    border-radius: 8px;
+    background-color: #37474f;
+    color: #e0e0e0;
+    flex: 1;
+    min-width: 180px;
+    font-size: 16px;
+}
+
+/* Кнопки */
+.catalog-button {
+    padding: 12px 20px;
+    background-color: #4db6ac;
+    color: #1a2634;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s;
+    font-weight: bold;
+    font-size: 16px;
+    text-transform: uppercase;
+}
+
+.catalog-button:hover {
+    background-color: #80cbc4;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* Контейнер пагинации */
+.catalog-pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 15px;
+    margin-top: 30px;
+    background-color: #263238;
+    padding: 15px;
+    border-radius: 10px;
+}
+
+/* Выпадающий список для выбора количества элементов на странице */
+.catalog-items-per-page {
+    padding: 10px;
+    border-radius: 8px;
+    background-color: #37474f;
+    color: #e0e0e0;
+    font-size: 16px;
+    border: 2px solid #4db6ac;
+}
+
+/* Информация о текущей странице */
+.catalog-pagination-info {
+    font-size: 16px;
+    color: #4db6ac;
+    font-weight: bold;
+}
+
+/* Таблица каталога */
+.catalog-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0 10px;
+}
+
+.catalog-table th {
+    background-color: #4db6ac;
+    color: #1a2634;
+    padding: 15px;
+    text-align: left;
+    font-weight: bold;
+    cursor: pointer;
+    font-size: 18px;
+    text-transform: uppercase;
+}
+
+.catalog-table th:hover {
+    background-color: #80cbc4;
+}
+
+.catalog-table td {
+    padding: 15px;
+    background-color: #263238;
+    border: none;
+    font-size: 16px;
+}
+
+.catalog-table tr {
+    transition: all 0.3s;
+}
+
+.catalog-table tr:hover td {
+    background-color: #37474f;
+    transform: scale(1.02);
+}
+
+/* Стили для ссылок в таблице */
+.catalog-link {
+    color: #4db6ac;
+    text-decoration: none;
+    transition: all 0.3s;
+    font-weight: bold;
+}
+
+.catalog-link:hover {
+    color: #80cbc4;
+    text-decoration: underline;
+}
+
+/* Стили для тегов */
+.tag {
+    background-color: #ff7043;
+    color: #1a2634;
+    padding: 4px 8px;
+    border-radius: 20px;
+    font-size: 14px;
+    font-weight: bold;
+    text-decoration: none;
+    transition: all 0.3s;
+}
+
+.tag:hover {
+    background-color: #ffa270;
+    transform: translateY(-2px);
+}
+
+/* Стили для изображений в таблице */
+.catalog-image {
+    max-width: 120px;
+    max-height: 120px;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.3s;
+    border: 3px solid #4db6ac;
+}
+
+.catalog-image:hover {
+    transform: scale(1.1) rotate(5deg);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+}
+
+/* Модальное окно для просмотра изображений */
+.image-preview-modal {
+    background-color: rgba(26, 38, 52, 0.9);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.image-preview-modal img {
+    max-width: 90%;
+    max-height: 90%;
+    object-fit: contain;
+    border-radius: 15px;
+    box-shadow: 0 0 30px rgba(77, 182, 172, 0.3);
+    border: 5px solid #4db6ac;
+}
