@@ -325,32 +325,16 @@ var TableRenderer = class {
     });
     let startX;
     let startWidth;
-    let nextColumnHeader;
-    let nextColumnStartWidth;
     const onMouseMove = (e) => {
       const dx = e.clientX - startX;
       const newWidth = Math.max(50, startWidth + dx);
       const widthDiff = newWidth - startWidth;
-      if (nextColumnHeader) {
-        const nextColumnNewWidth = Math.max(50, nextColumnStartWidth - dx);
-        if (newWidth >= 50 && nextColumnNewWidth >= 50) {
-          th.style.width = `${newWidth}px`;
-          this.columnWidths[header] = newWidth;
-          this.updateColumnWidth(header, newWidth);
-          const nextColumnTh = th.nextElementSibling;
-          if (nextColumnTh) {
-            nextColumnTh.style.width = `${nextColumnNewWidth}px`;
-            this.columnWidths[nextColumnHeader] = nextColumnNewWidth;
-            this.updateColumnWidth(nextColumnHeader, nextColumnNewWidth);
-          }
-        }
-      } else {
-        if (this.totalWidth + widthDiff <= this.view.containerEl.offsetWidth) {
-          th.style.width = `${newWidth}px`;
-          this.columnWidths[header] = newWidth;
-          this.updateColumnWidth(header, newWidth);
-        }
+      if (this.totalWidth + widthDiff > this.view.containerEl.offsetWidth) {
+        return;
       }
+      th.style.width = `${newWidth}px`;
+      this.columnWidths[header] = newWidth;
+      this.updateColumnWidth(header, newWidth);
       this.updateTotalWidth();
     };
     const onMouseUp = () => {
@@ -361,14 +345,6 @@ var TableRenderer = class {
     resizeHandle.addEventListener("mousedown", (e) => {
       startX = e.clientX;
       startWidth = th.offsetWidth;
-      const nextTh = th.nextElementSibling;
-      if (nextTh) {
-        nextColumnHeader = nextTh.textContent || "";
-        nextColumnStartWidth = nextTh.offsetWidth;
-      } else {
-        nextColumnHeader = "";
-        nextColumnStartWidth = 0;
-      }
       document.addEventListener("mousemove", onMouseMove);
       document.addEventListener("mouseup", onMouseUp);
       e.preventDefault();
@@ -424,24 +400,32 @@ var ItemParser = class {
     const items = [];
     let currentItem = {};
     let lineNumber = 0;
+    console.log(`\u041D\u0430\u0447\u0430\u043B\u043E \u043F\u0430\u0440\u0441\u0438\u043D\u0433\u0430 \u0444\u0430\u0439\u043B\u0430: ${filePath}`);
     content.split("\n").forEach((line) => {
       lineNumber++;
-      if (line.startsWith("- \u0422\u043E\u0432\u0430\u0440")) {
+      const itemTypeMatch = this.plugin.settings.itemTypes.find((type) => line.startsWith(`- ${type}`));
+      if (itemTypeMatch) {
         if (Object.keys(currentItem).length > 0) {
+          console.log(`\u0414\u043E\u0431\u0430\u0432\u043B\u0435\u043D\u0438\u0435 \u044D\u043B\u0435\u043C\u0435\u043D\u0442\u0430: ${JSON.stringify(currentItem)}`);
           items.push(currentItem);
         }
-        currentItem = { lineNumber, filePath };
+        currentItem = { lineNumber, filePath, type: itemTypeMatch };
+        console.log(`\u041D\u043E\u0432\u044B\u0439 \u044D\u043B\u0435\u043C\u0435\u043D\u0442 \u0442\u0438\u043F\u0430 ${itemTypeMatch} \u043D\u0430\u0447\u0438\u043D\u0430\u0435\u0442\u0441\u044F \u043D\u0430 \u0441\u0442\u0440\u043E\u043A\u0435 ${lineNumber}`);
       } else if (line.trim().startsWith("- ")) {
         const [key, ...valueParts] = line.split(":").map((s) => s.trim());
         const cleanKey = key.replace("- ", "");
         if (this.plugin.settings.keys.includes(cleanKey)) {
-          currentItem[cleanKey] = valueParts.join(":").trim().split(",").map((v) => v.trim());
+          const value = valueParts.join(":").trim().split(",").map((v) => v.trim());
+          currentItem[cleanKey] = value;
+          console.log(`\u0414\u043E\u0431\u0430\u0432\u043B\u0435\u043D\u043E \u0441\u0432\u043E\u0439\u0441\u0442\u0432\u043E ${cleanKey}: ${value}`);
         }
       }
     });
     if (Object.keys(currentItem).length > 0) {
+      console.log(`\u0414\u043E\u0431\u0430\u0432\u043B\u0435\u043D\u0438\u0435 \u043F\u043E\u0441\u043B\u0435\u0434\u043D\u0435\u0433\u043E \u044D\u043B\u0435\u043C\u0435\u043D\u0442\u0430: ${JSON.stringify(currentItem)}`);
       items.push(currentItem);
     }
+    console.log(`\u0412\u0441\u0435\u0433\u043E \u044D\u043B\u0435\u043C\u0435\u043D\u0442\u043E\u0432 \u043D\u0430\u0439\u0434\u0435\u043D\u043E: ${items.length}`);
     return items;
   }
 };
@@ -770,19 +754,20 @@ var FilterModal = class extends import_obsidian3.Modal {
 var DEFAULT_SETTINGS = {
   filenames: ["\u041A\u0430\u0442\u0430\u043B\u043E\u0433 \u0442\u043E\u0432\u0430\u0440\u043E\u0432*", "\u041F\u0440\u0438\u043C\u0435\u0440*"],
   keys: ["\u041D\u0430\u0437\u0432\u0430\u043D\u0438\u0435", "\u0426\u0432\u0435\u0442", "\u0418\u0437\u043E\u0431\u0440\u0430\u0436\u0435\u043D\u0438\u0435"],
+  itemTypes: ["\u0422\u043E\u0432\u0430\u0440", "\u041A\u043D\u0438\u0433\u0430"],
   preview_size: 100,
   cssFile: "styles.css",
   filterFields: [],
   renderEmbeds: true,
   columnWidths: {},
   showHeader: true,
-  headerText: "\u041A\u0430\u0442\u0430\u043B\u043E\u0433 \u0442\u043E\u0432\u0430\u0440\u043E\u0432",
+  headerText: "\u041A\u0430\u0442\u0430\u043B\u043E\u0433",
   openLocation: "right"
 };
 var SETTINGS_GROUPS = [
   {
     name: "\u041E\u0431\u0449\u0438\u0435 \u043D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0438",
-    settings: ["filenames", "keys", "headerText", "showHeader"]
+    settings: ["filenames", "keys", "itemTypes", "headerText", "showHeader"]
   },
   {
     name: "\u041D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0438 \u043E\u0442\u043E\u0431\u0440\u0430\u0436\u0435\u043D\u0438\u044F",
@@ -858,6 +843,13 @@ var CatalogSettingTab = class extends import_obsidian5.PluginSettingTab {
         await this.plugin.switchStyles(value);
       });
     });
+    new import_obsidian5.Setting(containerEl).setName("\u0422\u0438\u043F\u044B \u044D\u043B\u0435\u043C\u0435\u043D\u0442\u043E\u0432").setDesc("\u0412\u0432\u0435\u0434\u0438\u0442\u0435 \u0442\u0438\u043F\u044B \u044D\u043B\u0435\u043C\u0435\u043D\u0442\u043E\u0432, \u0440\u0430\u0437\u0434\u0435\u043B\u0435\u043D\u043D\u044B\u0435 \u0437\u0430\u043F\u044F\u0442\u043E\u0439 (\u043D\u0430\u043F\u0440\u0438\u043C\u0435\u0440, \u0422\u043E\u0432\u0430\u0440, \u041A\u043D\u0438\u0433\u0430)").addText((text) => text.setPlaceholder("\u0422\u043E\u0432\u0430\u0440, \u041A\u043D\u0438\u0433\u0430").setValue(this.plugin.settings.itemTypes.join(", ")).onChange(async (value) => {
+      this.plugin.settings.itemTypes = value.split(",").map((item) => item.trim());
+      await this.plugin.saveSettings();
+    }));
+  }
+  isValidSettingKey(key) {
+    return key in this.plugin.settings;
   }
   createSettingUI(containerEl, settingKey) {
     switch (settingKey) {
@@ -904,9 +896,6 @@ var CatalogSettingTab = class extends import_obsidian5.PluginSettingTab {
         }));
         break;
     }
-  }
-  isValidSettingKey(key) {
-    return key in this.plugin.settings;
   }
 };
 
