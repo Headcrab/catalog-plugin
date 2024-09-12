@@ -1,0 +1,338 @@
+/* Общие стили для каталога */
+.catalog-container {
+    padding: 20px;
+    /* Внутренний отступ контейнера каталога */
+    max-width: 1200px;
+    /* Максимальная ширина контейнера */
+    margin: 0 auto;
+    /* Центрирование контейнера */
+}
+
+.catalog-title {
+    margin-bottom: 20px;
+    /* Отступ снизу для заголовка каталога */
+    font-size: 24px;
+    /* Размер шрифта заголовка */
+    font-weight: bold;
+    /* Жирный шрифт для заголовка */
+    color: var(--text-normal);
+    /* Цвет текста заголовка */
+}
+
+/* Стили для таблицы */
+.catalog-table {
+    display: table;
+    width: 100%;
+    border-collapse: collapse;
+    /* Объединение границ ячеек */
+    margin-bottom: 20px;
+    /* Отступ снизу таблицы */
+}
+
+.catalog-table th,
+.catalog-table td {
+    border: 1px solid var(--background-modifier-border);
+    /* Границы ячеек */
+    padding: 8px;
+    /* Внутренний отступ ячеек */
+    text-align: left;
+    /* Выравнивание текста по левому краю */
+}
+
+.catalog-table th {
+    background-color: var(--background-secondary);
+    /* Цвет фона заголовков столбцов */
+    font-weight: bold;
+    /* Жирный шрифт для заголовков */
+    color: var(--text-normal);
+    /* Цвет текста заголовков */
+}
+
+.catalog-table tr:nth-child(even) {
+    background-color: var(--background-primary-alt);
+    /* Чередующийся цвет фона для строк */
+}
+
+.catalog-table tr:hover {
+    background-color: var(--background-modifier-hover);
+    /* Цвет фона при наведении на строку */
+}
+
+/* Стили для элементов управления */
+.catalog-controls {
+    margin-bottom: 20px;
+    /* Отступ снизу для контейнера элементов управления */
+    display: flex;
+    /* Flexbox для выравнивания элементов */
+    flex-wrap: wrap;
+    /* Перенос элементов на новую строку при необходимости */
+    gap: 10px;
+    /* Отступ между элементами */
+}
+
+.catalog-filter-input {
+    padding: 5px 10px;
+    /* Внутренний отступ для полей ввода */
+    border: 1px solid var(--background-modifier-border);
+    /* Граница полей ввода */
+    border-radius: 4px;
+    /* Скругление углов полей ввода */
+    font-size: 14px;
+    /* Размер шрифта в полях ввода */
+}
+
+.catalog-button {
+    padding: 5px 10px;
+    /* Внутренний отступ для кнопок */
+    background-color: var(--interactive-accent);
+    /* Цвет фона кнопок */
+    color: var(--text-on-accent);
+    /* Цвет текста кнопок */
+    border: none;
+    /* Убираем границу кнопок */
+    border-radius: 4px;
+    /* Скругление углов кнопок */
+    cursor: pointer;
+    /* Курсор в виде руки при наведении */
+    font-size: 14px;
+    /* Размер шрифта кнопок */
+    transition: background-color 0.3s;
+    /* Плавное изменение цвета фона */
+}
+
+.catalog-button:hover {
+    background-color: var(--interactive-accent-hover);
+    /* Цвет фона кнопок при наведении */
+}
+
+/* Стили для пагинации */
+.catalog-pagination {
+    display: flex;
+    /* Flexbox для выравнивания элементов пагинации */
+    justify-content: center;
+    /* Центрирование элементов по горизонтали */
+    align-items: center;
+    /* Центрирование элементов по вертикали */
+    margin-top: 20px;
+    /* Отступ сверху для пагинации */
+}
+
+.catalog-items-per-page {
+    margin-right: 10px;
+    /* Отступ справа для выбора количества элементов на странице */
+}
+
+.catalog-pagination-info {
+    margin: 0 10px;
+    /* Отступы по бокам для информации о текущей странице */
+}
+
+/* Стили для изображений */
+.catalog-image-container {
+    width: 100px;
+    /* Ширина контейнера изображения */
+    height: 100px;
+    /* Высота контейнера изображения */
+    display: flex;
+    /* Flexbox для центрирования изображения */
+    align-items: center;
+    /* Центрирование по вертикали */
+    justify-content: center;
+    /* Центрирование по горизонтали */
+    overflow: hidden;
+    /* Обрезка изображений, выходящих за пределы контейнера */
+}
+
+.catalog-image-container img {
+    max-width: 100%;
+    /* Максимальная ширина изображения */
+    max-height: 100%;
+    /* Максимальная высота изображения */
+    object-fit: contain;
+    /* Сохранение пропорций изображения */
+}
+
+/* Стили для встроенного содержимого */
+.embedded-content {
+    border: 1px solid var(--background-modifier-border);
+    /* Граница для встроенного содержимого */
+    padding: 10px;
+    /* Внутренний отступ */
+    margin-top: 10px;
+    /* Отступ сверху */
+    background-color: var(--background-primary-alt);
+    /* Цвет фона встроенного содержимого */
+}
+
+.embedded-loading {
+    text-align: center;
+    /* Центрирование текста загрузки */
+    color: var(--text-muted);
+    /* Цвет текста загрузки */
+}
+
+/* Стили для ссылок */
+.catalog-link {
+    color: var(--text-accent);
+    /* Цвет ссылок */
+    text-decoration: none;
+    /* Убираем подчеркивание */
+    transition: color 0.3s;
+    /* Плавное изменение цвета */
+}
+
+.catalog-link:hover {
+    text-decoration: underline;
+    /* Подчеркивание при наведении */
+    color: var(--text-accent-hover);
+    /* Цвет ссылок при наведении */
+}
+
+/* Стили для тегов */
+.tag {
+    background-color: var(--tag-background);
+    /* Цвет фона тегов */
+    color: var(--tag-color);
+    /* Цвет текста тегов */
+    padding: 2px 6px;
+    /* Внутренний отступ тегов */
+    border-radius: 4px;
+    /* Скругление углов тегов */
+    font-size: 12px;
+    /* Размер шрифта тегов */
+    font-weight: 500;
+    /* Насыщенность шрифта тегов */
+    display: inline-block;
+    /* Строчно-блочный элемент */
+    margin-right: 5px;
+    /* Отступ справа между тегами */
+}
+
+/* Стили для изменения размера столбцов */
+.resize-handle {
+    position: absolute;
+    /* Абсолютное позиционирование */
+    right: -3px;
+    /* Смещение вправо */
+    top: 0;
+    /* Выравнивание по верхнему краю */
+    bottom: 0;
+    /* Растягивание до нижнего края */
+    width: 6px;
+    /* Ширина области для изменения размера */
+    cursor: col-resize;
+    /* Курсор для изменения размера */
+    z-index: 1;
+    /* Поверх других элементов */
+    background-color: var(--background-modifier-border);
+    /* Цвет фона области изменения размера */
+    opacity: 0;
+    /* Изначально невидимый */
+    transition: opacity 0.2s;
+    /* Плавное появление/исчезновение */
+}
+
+.catalog-table th:hover .resize-handle {
+    opacity: 1;
+    /* Показываем при наведении на заголовок */
+}
+
+/* Стили для модального окна с изображением */
+.image-preview-modal {
+    display: flex;
+    /* Flexbox для центрирования содержимого */
+    justify-content: center;
+    /* Центрирование по горизонтали */
+    align-items: center;
+    /* Центрирование по вертикали */
+    background-color: rgba(0, 0, 0, 0.8);
+    /* Полупрозрачный фон */
+}
+
+.image-preview-modal img {
+    max-width: 90%;
+    /* Максимальная ширина изображения */
+    max-height: 90vh;
+    /* Максимальная высота изображения */
+    object-fit: contain;
+    /* Сохранение пропорций */
+    border-radius: 4px;
+    /* Скругление углов */
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
+    /* Тень для изображения */
+}
+
+/* Стили для адаптивности на мобильных устройствах */
+@media (max-width: 768px) {
+    .catalog-controls {
+        flex-direction: column;
+        /* Вертикальное расположение элементов управления */
+    }
+
+    .catalog-filter-input,
+    .catalog-button {
+        width: 100%;
+        /* Полная ширина на мобильных устройствах */
+        margin-bottom: 10px;
+        /* Отступ между элементами */
+    }
+
+    .catalog-table {
+        font-size: 14px;
+        /* Уменьшенный размер шрифта для мобильных */
+    }
+
+    .catalog-image-container {
+        width: 60px;
+        /* Уменьшенный размер изображений */
+        height: 60px;
+    }
+}
+
+/* Дополнительные стили для улучшения доступности */
+.catalog-table th[aria-sort] {
+    cursor: pointer;
+    /* Курсор-указатель для сортируемых заголовков */
+}
+
+.catalog-table th[aria-sort]::after {
+    content: ' ▼';
+    /* Индикатор сортировки */
+    font-size: 0.8em;
+    /* Размер индикатора */
+    margin-left: 5px;
+    /* Отступ слева от текста */
+}
+
+.catalog-table th[aria-sort="ascending"]::after {
+    content: ' ▲';
+    /* Индикатор для восходящей сортировки */
+}
+
+/* Стили для фокуса на элементах управления */
+.catalog-filter-input:focus,
+.catalog-button:focus {
+    outline: 2px solid var(--text-accent);
+    /* Выделение при фокусе */
+    outline-offset: 2px;
+    /* Отступ выделения */
+}
+
+/* Стили для анимации загрузки */
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.loading-spinner {
+    width: 20px;
+    height: 20px;
+    border: 2px solid var(--background-modifier-border);
+    border-top: 2px solid var(--text-accent);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    /* Анимация вращения */
+    display: inline-block;
+    margin-left: 10px;
+    /* Отступ слева от текста */
+}

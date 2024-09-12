@@ -27,163 +27,23 @@ var __toModule = (module2) => {
   return __reExport(__markAsModule(__defProp(module2 != null ? __create(__getProtoOf(module2)) : {}, "default", module2 && module2.__esModule && "default" in module2 ? { get: () => module2.default, enumerable: true } : { value: module2, enumerable: true })), module2);
 };
 
-// main.ts
+// src/main.ts
 __export(exports, {
   default: () => CatalogPlugin
 });
-var import_obsidian2 = __toModule(require("obsidian"));
+var import_obsidian6 = __toModule(require("obsidian"));
 
-// CatalogView.ts
-var import_obsidian = __toModule(require("obsidian"));
-var VIEW_TYPE_CATALOG = "catalog-view";
-var CatalogView = class extends import_obsidian.ItemView {
-  constructor(leaf, settings) {
-    super(leaf);
-    this.allItems = [];
-    this.currentPage = 1;
-    this.itemsPerPage = 10;
-    this.currentSortColumn = null;
-    this.currentSortOrder = "asc";
-    this.settings = settings;
+// src/components/CatalogView.ts
+var import_obsidian3 = __toModule(require("obsidian"));
+
+// src/components/FilterManager.ts
+var FilterManager = class {
+  constructor(plugin) {
+    this.plugin = plugin;
   }
-  getViewType() {
-    return VIEW_TYPE_CATALOG;
-  }
-  getDisplayText() {
-    return "\u041A\u0430\u0442\u0430\u043B\u043E\u0433 \u0442\u043E\u0432\u0430\u0440\u043E\u0432";
-  }
-  async onOpen() {
-    const container = this.containerEl.children[1];
-    container.empty();
-    container.createEl("h4", { text: "\u041A\u0430\u0442\u0430\u043B\u043E\u0433 \u0442\u043E\u0432\u0430\u0440\u043E\u0432" });
-    await this.renderCatalog(container);
-  }
-  async onClose() {
-  }
-  async renderCatalog(container) {
-    const mainContainer = container.createEl("div", { cls: "catalog-container" });
-    mainContainer.createEl("h4", { text: "\u041A\u0430\u0442\u0430\u043B\u043E\u0433 \u0442\u043E\u0432\u0430\u0440\u043E\u0432", cls: "catalog-title" });
-    this.allItems = await this.getAllItems(this.settings.filenames);
-    if (this.allItems.length === 0) {
-      mainContainer.createEl("p", { text: "\u041F\u0440\u0435\u0434\u0443\u043F\u0440\u0435\u0436\u0434\u0435\u043D\u0438\u0435: \u0412 \u0437\u0430\u043C\u0435\u0442\u043A\u0430\u0445 \u043A\u0430\u0442\u0430\u043B\u043E\u0433\u0430 \u0442\u043E\u0432\u0430\u0440\u043E\u0432 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D\u043E \u0434\u0430\u043D\u043D\u044B\u0445 \u0432 \u043E\u0436\u0438\u0434\u0430\u0435\u043C\u043E\u043C \u0444\u043E\u0440\u043C\u0430\u0442\u0435." });
-      return;
-    }
-    const controls = this.createControls(mainContainer);
-    const tableContainer = mainContainer.createEl("div");
-    this.updateTable(tableContainer);
-    controls.applyFilterButton.addEventListener("click", () => this.updateTable(tableContainer));
-    controls.resetFilterButton.addEventListener("click", () => this.resetFilters(mainContainer, tableContainer));
-    controls.itemsPerPageSelect.addEventListener("change", () => {
-      this.itemsPerPage = parseInt(controls.itemsPerPageSelect.value);
-      this.currentPage = 1;
-      this.updateTable(tableContainer);
-    });
-    controls.prevButton.addEventListener("click", () => {
-      if (this.currentPage > 1) {
-        this.currentPage--;
-        this.updateTable(tableContainer);
-      }
-    });
-    controls.nextButton.addEventListener("click", () => {
-      const totalPages = Math.ceil(this.getFilteredItems().length / this.itemsPerPage);
-      if (this.currentPage < totalPages) {
-        this.currentPage++;
-        this.updateTable(tableContainer);
-      }
-    });
-  }
-  async getAllItems(filenames) {
-    const allItems = [];
-    for (const filename of filenames) {
-      const files = this.app.vault.getMarkdownFiles().filter((file) => this.matchesMask(file.name, filename));
-      for (const file of files) {
-        const content = await this.app.vault.read(file);
-        const items = this.parseItems(content, file.path);
-        allItems.push(...items);
-      }
-    }
-    return allItems;
-  }
-  createControls(container) {
-    const controlsContainer = container.createEl("div", { cls: "catalog-controls" });
-    const inputStyle = "catalog-filter-input";
-    const allFields = this.getAllFields();
-    const filterFields = this.settings.filterFields;
-    const fieldsToFilter = filterFields.length > 0 ? allFields.filter((field) => filterFields.includes(field)) : allFields;
-    fieldsToFilter.forEach((field) => {
-      controlsContainer.createEl("input", {
-        attr: {
-          type: "text",
-          placeholder: `\u0424\u0438\u043B\u044C\u0442\u0440 \u043F\u043E ${field.toLowerCase()}`,
-          class: inputStyle
-        }
-      });
-    });
-    const buttonStyle = "catalog-button";
-    const applyFilterButton = controlsContainer.createEl("button", { cls: buttonStyle });
-    applyFilterButton.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>`;
-    const resetFilterButton = controlsContainer.createEl("button", { cls: buttonStyle });
-    resetFilterButton.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 2v6h6M2.66 15.57a10 10 0 1 0 .57-8.38"/></svg>`;
-    const paginationContainer = controlsContainer.createEl("div", { cls: "catalog-pagination" });
-    const itemsPerPageSelect = paginationContainer.createEl("select", { cls: "catalog-items-per-page" });
-    [5, 10, 20, 50, 100].forEach((value) => {
-      itemsPerPageSelect.createEl("option", { text: value.toString(), value: value.toString() });
-    });
-    itemsPerPageSelect.value = this.itemsPerPage.toString();
-    const prevButton = paginationContainer.createEl("button", { text: "\u2190", cls: buttonStyle });
-    const pageInfo = paginationContainer.createEl("span", {
-      text: `\u0421\u0442\u0440\u0430\u043D\u0438\u0446\u0430 ${this.currentPage}`,
-      cls: "catalog-pagination-info"
-    });
-    const nextButton = paginationContainer.createEl("button", { text: "\u2192", cls: buttonStyle });
-    return { applyFilterButton, resetFilterButton, itemsPerPageSelect, prevButton, pageInfo, nextButton };
-  }
-  updateTable(tableContainer) {
-    tableContainer.empty();
-    const filteredItems = this.getFilteredItems();
-    const paginatedItems = this.paginateItems(filteredItems);
-    const table = tableContainer.createEl("table", { cls: "catalog-table" });
-    const thead = table.createEl("thead");
-    const headerRow = thead.createEl("tr");
-    const columnWidth = `${100 / this.settings.keys.length}%`;
-    this.settings.keys.forEach((header) => {
-      const th = headerRow.createEl("th", {
-        text: header,
-        attr: {
-          style: `background-color: #3a3a3a; color: #e0e0e0; padding: 12px; text-align: left; font-weight: bold; cursor: pointer; width: ${columnWidth}; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;`
-        }
-      });
-      th.addEventListener("click", () => this.sortTable(header));
-    });
-    const tbody = table.createEl("tbody");
-    paginatedItems.forEach((item, index) => {
-      const row = tbody.createEl("tr", { attr: { style: `background-color: ${index % 2 === 0 ? "#2c2c2c" : "#333333"};` } });
-      this.settings.keys.forEach((key) => {
-        const cell = row.createEl("td", { attr: { style: `padding: 12px; border-top: 1px solid #444; width: ${columnWidth}; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;` } });
-        const values = item[key];
-        if (Array.isArray(values)) {
-          values.forEach((value, index2) => {
-            if (index2 > 0) {
-              cell.appendChild(document.createTextNode(", "));
-            }
-            this.createLinkOrText(cell, value, value);
-          });
-        } else if (typeof values === "string" || typeof values === "number") {
-          this.createLinkOrText(cell, values.toString(), values.toString());
-        } else {
-          cell.appendChild(document.createTextNode("-\u043D\u0435\u0442-"));
-        }
-      });
-    });
-    const totalPages = Math.ceil(filteredItems.length / this.itemsPerPage);
-    const pageInfo = this.containerEl.querySelector(".catalog-pagination-info");
-    if (pageInfo) {
-      pageInfo.textContent = `\u0421\u0442\u0440\u0430\u043D\u0438\u0446\u0430 ${this.currentPage} \u0438\u0437 ${totalPages}`;
-    }
-  }
-  getFilteredItems() {
+  getFilteredItems(allItems) {
     const filters = this.getFilters();
-    return this.allItems.filter((item) => Object.entries(filters).every(([key, value]) => {
+    return allItems.filter((item) => Object.entries(filters).every(([key, value]) => {
       if (!value)
         return true;
       const itemValue = item[key];
@@ -196,185 +56,35 @@ var CatalogView = class extends import_obsidian.ItemView {
     }));
   }
   getFilters() {
-    return Object.fromEntries(this.settings.keys.map((key) => {
+    const filters = {};
+    if (!this.plugin.catalogView) {
+      console.warn("CatalogView \u043D\u0435 \u0438\u043D\u0438\u0446\u0438\u0430\u043B\u0438\u0437\u0438\u0440\u043E\u0432\u0430\u043D");
+      return filters;
+    }
+    this.plugin.settings.keys.forEach((key) => {
       var _a;
-      return [key, ((_a = this.containerEl.querySelector(`input[placeholder="\u0424\u0438\u043B\u044C\u0442\u0440 \u043F\u043E ${key.toLowerCase()}"]`)) == null ? void 0 : _a.value) || ""];
-    }));
+      const input = (_a = this.plugin.catalogView) == null ? void 0 : _a.containerEl.querySelector(`input[placeholder="\u0424\u0438\u043B\u044C\u0442\u0440 \u043F\u043E ${key.toLowerCase()}"]`);
+      if (input) {
+        filters[key] = input.value;
+      }
+    });
+    return filters;
   }
-  paginateItems(items) {
-    const start = (this.currentPage - 1) * this.itemsPerPage;
-    const end = start + this.itemsPerPage;
-    return items.slice(start, end);
-  }
-  resetFilters(mainContainer, tableContainer) {
-    this.settings.keys.forEach((key) => {
+  resetFilters(mainContainer) {
+    this.plugin.settings.keys.forEach((key) => {
       const filterInput = mainContainer.querySelector(`input[placeholder="\u0424\u0438\u043B\u044C\u0442\u0440 \u043F\u043E ${key.toLowerCase()}"]`);
       if (filterInput) {
         filterInput.value = "";
       }
     });
-    this.currentSortColumn = null;
-    this.currentSortOrder = "asc";
-    this.currentPage = 1;
-    this.updateTable(tableContainer);
-  }
-  sortTable(column) {
-    if (this.currentSortColumn === column) {
-      this.currentSortOrder = this.currentSortOrder === "asc" ? "desc" : "asc";
-    } else {
-      this.currentSortColumn = column;
-      this.currentSortOrder = "asc";
-    }
-    this.allItems.sort((a, b) => {
-      const valueA = this.getSortValue(a[column]);
-      const valueB = this.getSortValue(b[column]);
-      return this.currentSortOrder === "asc" ? valueA.localeCompare(valueB) : valueB.localeCompare(valueA);
-    });
-    this.updateTable(this.containerEl.children[1].querySelector("div"));
-  }
-  getSortValue(value) {
-    if (Array.isArray(value)) {
-      return value[0] || "";
-    } else if (typeof value === "string" || typeof value === "number") {
-      return value.toString().replace(/^\[\[|\]\]$/g, "");
-    }
-    return "";
-  }
-  matchesMask(filename, mask) {
-    const regexPattern = mask.replace(/\*/g, ".*").replace(/\?/g, ".");
-    const regex = new RegExp(`^${regexPattern}$`, "i");
-    return regex.test(filename);
-  }
-  parseItems(content, filePath) {
-    const items = [];
-    let currentItem = {};
-    let lineNumber = 0;
-    content.split("\n").forEach((line) => {
-      lineNumber++;
-      if (line.startsWith("- \u0422\u043E\u0432\u0430\u0440")) {
-        if (Object.keys(currentItem).length > 0) {
-          items.push(currentItem);
-        }
-        currentItem = { lineNumber, filePath };
-      } else if (line.trim().startsWith("- ")) {
-        const [key, ...valueParts] = line.split(":").map((s) => s.trim());
-        const cleanKey = key.replace("- ", "");
-        if (this.settings.keys.includes(cleanKey)) {
-          currentItem[cleanKey] = valueParts.join(":").trim().split(",").map((v) => v.trim());
-        }
-      }
-    });
-    if (Object.keys(currentItem).length > 0) {
-      items.push(currentItem);
-    }
-    return items;
-  }
-  async createLinkOrText(container, value, displayText) {
-    if (value.startsWith("#")) {
-      container.createEl("a", {
-        text: value,
-        attr: {
-          class: "tag",
-          href: value,
-          style: "text-decoration: none; border-radius: 4px; padding: 2px 4px; font-size: 0.9em; font-weight: 500;"
-        }
-      });
-      return;
-    }
-    let filePath, linkText, isMedia = false;
-    if (value.startsWith("![[") && value.endsWith("]]")) {
-      isMedia = true;
-      filePath = value.slice(3, -2);
-    } else if (value.match(/\[.*?\]\(.*?\)/)) {
-      const match = value.match(/\[(.*?)\]\((.*?)\)/);
-      if (match) {
-        [, linkText, filePath] = match;
-        filePath = decodeURIComponent(filePath);
-      }
-    } else if (value.startsWith("[[") && value.endsWith("]]")) {
-      const parts = value.slice(2, -2).split("|").map((s) => s.trim());
-      filePath = parts[0];
-      linkText = parts[1] || parts[0];
-      isMedia = filePath ? [".png", ".jpg", ".jpeg", ".gif", ".svg", ".webp"].some((ext) => filePath.toLowerCase().endsWith(ext)) : false;
-    } else {
-      container.appendChild(document.createTextNode(value));
-      return;
-    }
-    linkText = linkText || (filePath == null ? void 0 : filePath.replace(/\.md$/, ""));
-    filePath = filePath == null ? void 0 : filePath.replace(/^\//, "");
-    if (filePath) {
-      let file = this.app.vault.getAbstractFileByPath(filePath);
-      if (!file && !filePath.endsWith(".md")) {
-        file = this.app.vault.getAbstractFileByPath(filePath + ".md");
-      }
-      if (isMedia && file instanceof import_obsidian.TFile) {
-        const imgElement = container.createEl("img", {
-          cls: "catalog-image",
-          attr: {
-            src: this.app.vault.getResourcePath(file),
-            alt: linkText || ""
-          }
-        });
-        imgElement.addEventListener("click", (event) => {
-          event.preventDefault();
-          event.stopPropagation();
-          this.openImageModal(file);
-        });
-      } else {
-        const linkElement = container.createEl("a", {
-          text: linkText || "",
-          cls: "catalog-link",
-          attr: {
-            href: filePath
-          }
-        });
-        linkElement.addEventListener("click", (event) => {
-          event.preventDefault();
-          if (file instanceof import_obsidian.TFile) {
-            this.app.workspace.openLinkText(file.path, "", false);
-          } else if (filePath) {
-            this.app.workspace.openLinkText(filePath, "", true);
-          }
-        });
-      }
-    }
-  }
-  openImageModal(file) {
-    new ImageModal(this.app, file).open();
-  }
-  updateSettings(newSettings) {
-    this.settings = newSettings;
-    this.reloadCatalog();
-    this.loadCustomCSS();
-  }
-  async reloadCatalog() {
-    this.allItems = await this.getAllItems(this.settings.filenames);
-    const container = this.containerEl.children[1];
-    container.empty();
-    await this.renderCatalog(container);
-  }
-  async loadCustomCSS() {
-    if (this.settings.cssFile) {
-      const file = this.app.vault.getAbstractFileByPath(this.settings.cssFile);
-      if (file instanceof import_obsidian.TFile) {
-        const content = await this.app.vault.read(file);
-        const styleEl = document.getElementById("catalog-plugin-styles");
-        if (styleEl) {
-          styleEl.textContent = content;
-        }
-      }
-    }
-  }
-  getAllFields() {
-    const allFields = new Set();
-    this.allItems.forEach((item) => {
-      Object.keys(item).forEach((key) => {
-        allFields.add(key);
-      });
-    });
-    return Array.from(allFields);
   }
 };
+
+// src/components/LinkRenderer.ts
+var import_obsidian2 = __toModule(require("obsidian"));
+
+// src/components/ImageModal.ts
+var import_obsidian = __toModule(require("obsidian"));
 var ImageModal = class extends import_obsidian.Modal {
   constructor(app, file) {
     super(app);
@@ -409,45 +119,875 @@ var ImageModal = class extends import_obsidian.Modal {
   }
 };
 
-// main.ts
+// src/components/LinkRenderer.ts
+var LinkRenderer = class {
+  constructor(app, view) {
+    this.app = app;
+    this.view = view;
+  }
+  async createLinkOrText(container, value, displayText, depth = 0) {
+    if (value.startsWith("#")) {
+      container.createEl("a", {
+        text: value,
+        attr: {
+          class: "tag",
+          href: value,
+          style: "text-decoration: none; border-radius: 4px; padding: 2px 4px; font-size: 0.9em; font-weight: 500;"
+        }
+      });
+      return;
+    }
+    let filePath, linkText, isMedia = false, isEmbedded = false;
+    if (value.startsWith("![[") && value.endsWith("]]")) {
+      isEmbedded = true;
+      filePath = value.slice(3, -2);
+      isMedia = [".png", ".jpg", ".jpeg", ".gif", ".svg", ".webp"].some((ext) => filePath.toLowerCase().endsWith(ext));
+    } else if (value.match(/\[.*?\]\(.*?\)/)) {
+      const match = value.match(/\[(.*?)\]\((.*?)\)/);
+      if (match) {
+        [, linkText, filePath] = match;
+        filePath = decodeURIComponent(filePath);
+      }
+    } else if (value.startsWith("[[") && value.endsWith("]]")) {
+      const parts = value.slice(2, -2).split("|").map((s) => s.trim());
+      filePath = parts[0];
+      linkText = parts[1] || parts[0];
+      isMedia = [".png", ".jpg", ".jpeg", ".gif", ".svg", ".webp"].some((ext) => filePath.toLowerCase().endsWith(ext));
+    } else {
+      container.appendChild(document.createTextNode(value));
+      return;
+    }
+    linkText = linkText || (filePath == null ? void 0 : filePath.replace(/\.md$/, ""));
+    filePath = filePath == null ? void 0 : filePath.replace(/^\//, "");
+    if (filePath) {
+      let file = this.app.vault.getAbstractFileByPath(filePath);
+      if (!file && !filePath.endsWith(".md")) {
+        file = this.app.vault.getAbstractFileByPath(filePath + ".md");
+      }
+      if (isEmbedded && file instanceof import_obsidian2.TFile) {
+        if (this.view.plugin.settings.renderEmbeds) {
+          if (isMedia) {
+            this.renderMediaEmbed(container, file);
+          } else if (depth < 3) {
+            this.renderTextEmbed(container, file);
+          }
+        } else {
+          this.createSimpleLink(container, filePath, linkText || filePath);
+        }
+      } else {
+        this.createSimpleLink(container, filePath, linkText || filePath);
+      }
+    } else {
+      container.appendChild(document.createTextNode(value));
+    }
+  }
+  renderMediaEmbed(container, file) {
+    const imgContainer = container.createEl("div", {
+      cls: "catalog-image-container",
+      attr: {
+        style: `width: ${this.view.plugin.settings.preview_size}px; height: ${this.view.plugin.settings.preview_size}px; display: flex; align-items: center; justify-content: center; overflow: hidden; min-width: ${this.view.plugin.settings.preview_size}px; min-height: ${this.view.plugin.settings.preview_size}px;`
+      }
+    });
+    const imgElement = imgContainer.createEl("img", {
+      attr: {
+        src: this.app.vault.getResourcePath(file),
+        alt: file.name,
+        style: `max-width: 100%; max-height: 100%; object-fit: contain;`
+      }
+    });
+    imgElement.addEventListener("click", () => {
+      new ImageModal(this.app, file).open();
+    });
+  }
+  async renderTextEmbed(container, file) {
+    const embedContainer = container.createEl("div", { cls: "embedded-content" });
+    const loadingEl = embedContainer.createEl("div", { text: "\u0417\u0430\u0433\u0440\u0443\u0437\u043A\u0430...", cls: "embedded-loading" });
+    setTimeout(async () => {
+      const content = await this.app.vault.cachedRead(file);
+      loadingEl.remove();
+      await import_obsidian2.MarkdownRenderer.renderMarkdown(content, embedContainer, file.path, this.view);
+    }, 0);
+  }
+  createSimpleLink(container, filePath, linkText) {
+    const linkElement = container.createEl("a", {
+      text: linkText,
+      cls: "internal-link catalog-link",
+      attr: {
+        href: filePath,
+        "data-href": filePath
+      }
+    });
+    linkElement.addEventListener("click", (event) => {
+      event.preventDefault();
+      this.app.workspace.openLinkText(filePath, "", true);
+    });
+    this.addHoverPreview(linkElement, filePath);
+  }
+  addHoverPreview(link, fileName) {
+    const mouseEnterHandler = (event) => {
+      const file = this.app.metadataCache.getFirstLinkpathDest(fileName, "");
+      if (file) {
+        this.app.workspace.trigger("hover-link", {
+          event,
+          source: "catalog-plugin",
+          hoverParent: this.view.containerEl,
+          targetEl: link,
+          linktext: fileName,
+          sourcePath: file.path
+        });
+      }
+    };
+    link.addEventListener("mouseenter", mouseEnterHandler);
+    link.addEventListener("mouseleave", () => {
+      this.app.workspace.trigger("hover-link", {
+        event: new MouseEvent("mouseleave"),
+        source: "catalog-plugin",
+        hoverParent: this.view.containerEl,
+        targetEl: link,
+        linktext: fileName
+      });
+    });
+  }
+};
+
+// src/components/TableRenderer.ts
+var TableRenderer = class {
+  constructor(view) {
+    this.view = view;
+    this.columnWidths = {};
+    this.totalWidth = 0;
+    this.linkRenderer = new LinkRenderer(view.app, view);
+    this.loadColumnWidths();
+  }
+  render(tableContainer, items) {
+    console.log("\u0420\u0435\u043D\u0434\u0435\u0440\u0438\u043D\u0433 \u0442\u0430\u0431\u043B\u0438\u0446\u044B");
+    tableContainer.empty();
+    const table = tableContainer.createEl("table", { cls: "catalog-table" });
+    this.renderTableHeader(table);
+    this.renderTableBody(table, items);
+    this.updateTotalWidth();
+    console.log("\u0422\u0430\u0431\u043B\u0438\u0446\u0430 \u043E\u0442\u0440\u0435\u043D\u0434\u0435\u0440\u0435\u043D\u0430");
+  }
+  renderTableHeader(table) {
+    const thead = table.createEl("thead");
+    const headerRow = thead.createEl("tr");
+    this.view.plugin.settings.keys.forEach((header, index) => {
+      const isLastColumn = index === this.view.plugin.settings.keys.length - 1;
+      const th = headerRow.createEl("th", {
+        attr: {
+          style: `min-width: 50px; position: relative; width: ${this.columnWidths[header] || 100}px;`
+        }
+      });
+      const headerContent = th.createEl("div", {
+        text: header,
+        attr: {
+          style: "padding: 12px; background-color: var(--background-secondary); color: var(--text-normal); text-align: left; font-weight: bold; cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"
+        }
+      });
+      headerContent.addEventListener("click", () => this.view.sortTable(header));
+      if (!isLastColumn) {
+        this.addResizeHandle(th, header);
+      }
+    });
+  }
+  renderTableBody(table, items) {
+    const tbody = table.createEl("tbody");
+    items.forEach((item, rowIndex) => {
+      const row = tbody.createEl("tr", { attr: { style: `background-color: ${rowIndex % 2 === 0 ? "var(--background-primary)" : "var(--background-primary-alt)"};` } });
+      this.view.plugin.settings.keys.forEach((key) => {
+        const cell = row.createEl("td", {
+          attr: {
+            style: `padding: 12px; border-top: 1px solid var(--background-modifier-border); overflow-wrap: break-word; word-break: break-word; width: ${this.columnWidths[key] || 100}px;`
+          }
+        });
+        const values = item[key];
+        if (Array.isArray(values)) {
+          values.forEach((value, index) => {
+            if (index > 0) {
+              cell.appendChild(document.createTextNode(", "));
+            }
+            this.linkRenderer.createLinkOrText(cell, value, value);
+          });
+        } else if (typeof values === "string" || typeof values === "number") {
+          this.linkRenderer.createLinkOrText(cell, values.toString(), values.toString());
+        } else {
+          cell.appendChild(document.createTextNode("-\u043D\u0435\u0442-"));
+        }
+      });
+    });
+  }
+  addResizeHandle(th, header) {
+    const resizeHandle = th.createEl("div", {
+      cls: "resize-handle",
+      attr: {
+        style: "position: absolute; right: 0; top: 0; bottom: 0; width: 5px; cursor: col-resize; background-color: var(--background-modifier-border);"
+      }
+    });
+    let startX;
+    let startWidth;
+    let nextColumnHeader;
+    let nextColumnStartWidth;
+    const onMouseMove = (e) => {
+      const dx = e.clientX - startX;
+      const newWidth = Math.max(50, startWidth + dx);
+      const widthDiff = newWidth - startWidth;
+      if (nextColumnHeader) {
+        const nextColumnNewWidth = Math.max(50, nextColumnStartWidth - dx);
+        if (newWidth >= 50 && nextColumnNewWidth >= 50) {
+          th.style.width = `${newWidth}px`;
+          this.columnWidths[header] = newWidth;
+          this.updateColumnWidth(header, newWidth);
+          const nextColumnTh = th.nextElementSibling;
+          if (nextColumnTh) {
+            nextColumnTh.style.width = `${nextColumnNewWidth}px`;
+            this.columnWidths[nextColumnHeader] = nextColumnNewWidth;
+            this.updateColumnWidth(nextColumnHeader, nextColumnNewWidth);
+          }
+        }
+      } else {
+        if (this.totalWidth + widthDiff <= this.view.containerEl.offsetWidth) {
+          th.style.width = `${newWidth}px`;
+          this.columnWidths[header] = newWidth;
+          this.updateColumnWidth(header, newWidth);
+        }
+      }
+      this.updateTotalWidth();
+    };
+    const onMouseUp = () => {
+      document.removeEventListener("mousemove", onMouseMove);
+      document.removeEventListener("mouseup", onMouseUp);
+      this.saveColumnWidths();
+    };
+    resizeHandle.addEventListener("mousedown", (e) => {
+      startX = e.clientX;
+      startWidth = th.offsetWidth;
+      const nextTh = th.nextElementSibling;
+      if (nextTh) {
+        nextColumnHeader = nextTh.textContent || "";
+        nextColumnStartWidth = nextTh.offsetWidth;
+      } else {
+        nextColumnHeader = "";
+        nextColumnStartWidth = 0;
+      }
+      document.addEventListener("mousemove", onMouseMove);
+      document.addEventListener("mouseup", onMouseUp);
+      e.preventDefault();
+    });
+  }
+  updateColumnWidth(header, width) {
+    const table = this.view.containerEl.querySelector(".catalog-table");
+    if (table) {
+      const columnIndex = this.view.plugin.settings.keys.indexOf(header);
+      const cells = table.querySelectorAll(`td:nth-child(${columnIndex + 1})`);
+      cells.forEach((cell) => {
+        cell.style.width = `${width}px`;
+      });
+    }
+  }
+  updateTotalWidth() {
+    this.totalWidth = Object.values(this.columnWidths).reduce((sum, width) => sum + width, 0);
+  }
+  saveColumnWidths() {
+    localStorage.setItem("catalogColumnWidths", JSON.stringify(this.columnWidths));
+  }
+  loadColumnWidths() {
+    const savedWidths = localStorage.getItem("catalogColumnWidths");
+    if (savedWidths) {
+      this.columnWidths = JSON.parse(savedWidths);
+    }
+  }
+};
+
+// src/components/ItemParser.ts
+var ItemParser = class {
+  constructor(plugin) {
+    this.plugin = plugin;
+  }
+  async getAllItems(filenames) {
+    const allItems = [];
+    for (const filename of filenames) {
+      const files = this.plugin.app.vault.getMarkdownFiles().filter((file) => this.matchesMask(file.name, filename));
+      for (const file of files) {
+        const content = await this.plugin.app.vault.read(file);
+        const items = this.parseItems(content, file.path);
+        allItems.push(...items);
+      }
+    }
+    return allItems;
+  }
+  matchesMask(filename, mask) {
+    const regexPattern = mask.replace(/\*/g, ".*").replace(/\?/g, ".");
+    const regex = new RegExp(`^${regexPattern}$`, "i");
+    return regex.test(filename);
+  }
+  parseItems(content, filePath) {
+    const items = [];
+    let currentItem = {};
+    let lineNumber = 0;
+    content.split("\n").forEach((line) => {
+      lineNumber++;
+      if (line.startsWith("- \u0422\u043E\u0432\u0430\u0440")) {
+        if (Object.keys(currentItem).length > 0) {
+          items.push(currentItem);
+        }
+        currentItem = { lineNumber, filePath };
+      } else if (line.trim().startsWith("- ")) {
+        const [key, ...valueParts] = line.split(":").map((s) => s.trim());
+        const cleanKey = key.replace("- ", "");
+        if (this.plugin.settings.keys.includes(cleanKey)) {
+          currentItem[cleanKey] = valueParts.join(":").trim().split(",").map((v) => v.trim());
+        }
+      }
+    });
+    if (Object.keys(currentItem).length > 0) {
+      items.push(currentItem);
+    }
+    return items;
+  }
+};
+
+// src/components/CatalogView.ts
+var VIEW_TYPE_CATALOG = "catalog-view";
+var CatalogView = class extends import_obsidian3.ItemView {
+  constructor(leaf, plugin) {
+    super(leaf);
+    this.allItems = [];
+    this.currentPage = 1;
+    this.itemsPerPage = 10;
+    this.currentSortColumn = null;
+    this.currentSortOrder = "asc";
+    this.columnWidths = {};
+    this.plugin = plugin;
+    this.resizeObserver = new ResizeObserver(this.onTableResize.bind(this));
+    this.filterManager = new FilterManager(this.plugin);
+    this.tableRenderer = new TableRenderer(this);
+    this.itemParser = new ItemParser(this.plugin);
+    this.columnWidths = { ...this.plugin.settings.columnWidths };
+  }
+  getViewType() {
+    return VIEW_TYPE_CATALOG;
+  }
+  getDisplayText() {
+    return this.plugin.settings.headerText || "\u041A\u0430\u0442\u0430\u043B\u043E\u0433 \u0442\u043E\u0432\u0430\u0440\u043E\u0432";
+  }
+  async onOpen() {
+    console.log("\u041E\u0442\u043A\u0440\u044B\u0442\u0438\u0435 \u0432\u0438\u0434\u0430 \u043A\u0430\u0442\u0430\u043B\u043E\u0433\u0430");
+    const container = this.containerEl.children[1];
+    container.empty();
+    const headerContainer = container.createEl("div", { cls: "catalog-header" });
+    const titleEl = headerContainer.createEl("h2", { text: "\u041A\u0430\u0442\u0430\u043B\u043E\u0433" });
+    titleEl.style.marginRight = "auto";
+    const controlsContainer = headerContainer.createEl("div", { cls: "catalog-controls" });
+    const searchInput = controlsContainer.createEl("input", {
+      type: "search",
+      placeholder: "\u041F\u043E\u0438\u0441\u043A...",
+      cls: "catalog-search"
+    });
+    const updateButton = controlsContainer.createEl("button", {
+      text: "\u041E\u0431\u043D\u043E\u0432\u0438\u0442\u044C",
+      cls: "catalog-update-btn"
+    });
+    updateButton.addEventListener("click", () => this.reloadCatalog());
+    const filterButton = controlsContainer.createEl("button", {
+      text: "\u0424\u0438\u043B\u044C\u0442\u0440\u044B",
+      cls: "catalog-filter-btn"
+    });
+    filterButton.addEventListener("click", () => this.openFilterModal());
+    await this.renderCatalog(container);
+    console.log("\u0420\u0435\u043D\u0434\u0435\u0440\u0438\u043D\u0433 \u043A\u0430\u0442\u0430\u043B\u043E\u0433\u0430 \u0437\u0430\u0432\u0435\u0440\u0448\u0435\u043D");
+  }
+  async onClose() {
+  }
+  async renderCatalog(container) {
+    const mainContainer = container.createEl("div", { cls: "catalog-container" });
+    if (this.plugin.settings.showHeader) {
+      mainContainer.createEl("h4", { text: this.plugin.settings.headerText, cls: "catalog-title" });
+    }
+    this.allItems = await this.itemParser.getAllItems(this.plugin.settings.filenames);
+    console.log("\u0417\u0430\u0433\u0440\u0443\u0436\u0435\u043D\u043D\u044B\u0435 \u044D\u043B\u0435\u043C\u0435\u043D\u0442\u044B:", this.allItems);
+    if (this.allItems.length === 0) {
+      mainContainer.createEl("p", { text: "\u041F\u0440\u0435\u0434\u0443\u043F\u0440\u0435\u0436\u0434\u0435\u043D\u0438\u0435: \u0412 \u0437\u0430\u043C\u0435\u0442\u043A\u0430\u0445 \u043A\u0430\u0442\u0430\u043B\u043E\u0433\u0430 \u0442\u043E\u0432\u0430\u0440\u043E\u0432 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D\u043E \u0434\u0430\u043D\u043D\u044B\u0445 \u0432 \u043E\u0436\u0438\u0434\u0430\u0435\u043C\u043E\u043C \u0444\u043E\u0440\u043C\u0430\u0442\u0435." });
+      return;
+    }
+    const controls = this.createControls(mainContainer);
+    const tableContainer = mainContainer.createEl("div", { cls: "catalog-table-container" });
+    this.updateTable(tableContainer);
+    controls.applyFilterButton.addEventListener("click", () => this.updateTable(tableContainer));
+    controls.resetFilterButton.addEventListener("click", () => this.resetFiltersAndColumns(mainContainer));
+    controls.itemsPerPageSelect.addEventListener("change", () => {
+      this.itemsPerPage = parseInt(controls.itemsPerPageSelect.value);
+      this.currentPage = 1;
+      this.updateTable(tableContainer);
+    });
+    controls.prevButton.addEventListener("click", () => {
+      if (this.currentPage > 1) {
+        this.currentPage--;
+        this.updateTable(tableContainer);
+      }
+    });
+    controls.nextButton.addEventListener("click", () => {
+      const totalPages = Math.ceil(this.filterManager.getFilteredItems(this.allItems).length / this.itemsPerPage);
+      if (this.currentPage < totalPages) {
+        this.currentPage++;
+        this.updateTable(tableContainer);
+      }
+    });
+  }
+  createControls(container) {
+    const controlsContainer = container.createEl("div", { cls: "catalog-controls" });
+    const inputStyle = "catalog-filter-input";
+    const allFields = this.getAllFields();
+    const filterFields = this.plugin.settings.filterFields;
+    const fieldsToFilter = filterFields.length > 0 ? allFields.filter((field) => filterFields.includes(field)) : allFields;
+    fieldsToFilter.forEach((field) => {
+      controlsContainer.createEl("input", {
+        attr: {
+          type: "text",
+          placeholder: `\u0424\u0438\u043B\u044C\u0442\u0440 \u043F\u043E ${field.toLowerCase()}`,
+          class: inputStyle
+        }
+      });
+    });
+    const buttonStyle = "catalog-button";
+    const applyFilterButton = controlsContainer.createEl("button", { cls: buttonStyle });
+    applyFilterButton.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>`;
+    const resetFilterButton = controlsContainer.createEl("button", { cls: buttonStyle });
+    resetFilterButton.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 2v6h6M2.66 15.57a10 10 0 1 0 .57-8.38"/></svg>`;
+    resetFilterButton.addEventListener("click", () => this.resetFiltersAndColumns(container));
+    const paginationContainer = controlsContainer.createEl("div", { cls: "catalog-pagination" });
+    const itemsPerPageSelect = paginationContainer.createEl("select", { cls: "catalog-items-per-page" });
+    [5, 10, 20, 50, 100].forEach((value) => {
+      itemsPerPageSelect.createEl("option", { text: value.toString(), value: value.toString() });
+    });
+    itemsPerPageSelect.value = this.itemsPerPage.toString();
+    const prevButton = paginationContainer.createEl("button", { text: "\u2190", cls: buttonStyle });
+    const pageInfo = paginationContainer.createEl("span", {
+      text: `\u0421\u0442\u0440\u0430\u043D\u0438\u0446\u0430 ${this.currentPage}`,
+      cls: "catalog-pagination-info"
+    });
+    const nextButton = paginationContainer.createEl("button", { text: "\u2192", cls: buttonStyle });
+    return { applyFilterButton, resetFilterButton, itemsPerPageSelect, prevButton, pageInfo, nextButton };
+  }
+  updateTable(tableContainer) {
+    console.log("\u041E\u0431\u043D\u043E\u0432\u043B\u0435\u043D\u0438\u0435 \u0442\u0430\u0431\u043B\u0438\u0446\u044B");
+    if (!this.allItems || this.allItems.length === 0) {
+      console.warn("\u041D\u0435\u0442 \u044D\u043B\u0435\u043C\u0435\u043D\u0442\u043E\u0432 \u0434\u043B\u044F \u043E\u0442\u043E\u0431\u0440\u0430\u0436\u0435\u043D\u0438\u044F");
+      tableContainer.innerHTML = "<p>\u041D\u0435\u0442 \u0434\u0430\u043D\u043D\u044B\u0445 \u0434\u043B\u044F \u043E\u0442\u043E\u0431\u0440\u0430\u0436\u0435\u043D\u0438\u044F</p>";
+      return;
+    }
+    const filteredItems = this.filterManager.getFilteredItems(this.allItems);
+    console.log("\u041E\u0442\u0444\u0438\u043B\u044C\u0442\u0440\u043E\u0432\u0430\u043D\u043D\u044B\u0435 \u044D\u043B\u0435\u043C\u0435\u043D\u0442\u044B:", filteredItems);
+    const paginatedItems = this.paginateItems(filteredItems);
+    console.log("\u042D\u043B\u0435\u043C\u0435\u043D\u0442\u044B \u043D\u0430 \u0442\u0435\u043A\u0443\u0449\u0435\u0439 \u0441\u0442\u0440\u0430\u043D\u0438\u0446\u0435:", paginatedItems);
+    this.tableRenderer.render(tableContainer, paginatedItems);
+    this.updatePaginationInfo();
+    this.updateColumnWidths();
+  }
+  updateColumnWidth(key, width) {
+    this.columnWidths[key] = width;
+    this.updateColumnWidths();
+  }
+  updateColumnWidths() {
+    const table = this.containerEl.querySelector("table");
+    if (!table)
+      return;
+    const headers = table.querySelectorAll("th");
+    headers.forEach((header, index) => {
+      const key = this.plugin.settings.keys[index];
+      if (this.columnWidths[key]) {
+        header.style.width = `${this.columnWidths[key]}px`;
+      }
+    });
+    this.plugin.settings.columnWidths = { ...this.columnWidths };
+  }
+  onTableResize(entries) {
+    this.updateColumnWidths();
+  }
+  updatePaginationInfo() {
+    const filteredItems = this.filterManager.getFilteredItems(this.allItems);
+    const totalPages = Math.ceil(filteredItems.length / this.itemsPerPage);
+    const pageInfo = this.containerEl.querySelector(".catalog-pagination-info");
+    if (pageInfo) {
+      pageInfo.textContent = `\u0421\u0442\u0440\u0430\u043D\u0438\u0446\u0430 ${this.currentPage} \u0438\u0437 ${totalPages}`;
+    }
+  }
+  paginateItems(items) {
+    const start = (this.currentPage - 1) * this.itemsPerPage;
+    const end = start + this.itemsPerPage;
+    return items.slice(start, end);
+  }
+  resetFiltersAndColumns(mainContainer) {
+    var _a;
+    this.filterManager.resetFilters(mainContainer);
+    this.currentSortColumn = null;
+    this.currentSortOrder = "asc";
+    this.currentPage = 1;
+    const totalWidth = ((_a = this.containerEl.querySelector(".catalog-table")) == null ? void 0 : _a.clientWidth) || 0;
+    const columnCount = this.plugin.settings.keys.length;
+    const equalWidth = Math.floor(totalWidth / columnCount);
+    this.columnWidths = {};
+    this.plugin.settings.keys.forEach((key) => {
+      this.columnWidths[key] = equalWidth;
+    });
+    const tableContainer = this.containerEl.querySelector(".catalog-table-container");
+    if (tableContainer) {
+      this.updateTable(tableContainer);
+    }
+    this.plugin.settings.columnWidths = { ...this.columnWidths };
+    this.plugin.saveSettings();
+  }
+  sortTable(column) {
+    if (this.currentSortColumn === column) {
+      this.currentSortOrder = this.currentSortOrder === "asc" ? "desc" : "asc";
+    } else {
+      this.currentSortColumn = column;
+      this.currentSortOrder = "asc";
+    }
+    this.allItems.sort((a, b) => {
+      const valueA = this.getSortValue(a[column]);
+      const valueB = this.getSortValue(b[column]);
+      return this.currentSortOrder === "asc" ? valueA.localeCompare(valueB) : valueB.localeCompare(valueA);
+    });
+    const tableContainer = this.containerEl.querySelector(".catalog-table-container");
+    if (tableContainer) {
+      this.updateTable(tableContainer);
+    }
+  }
+  getSortValue(value) {
+    if (Array.isArray(value)) {
+      return value[0] || "";
+    } else if (typeof value === "string" || typeof value === "number") {
+      return value.toString().replace(/^\[\[|\]\]$/g, "");
+    }
+    return "";
+  }
+  updateSettings(newSettings) {
+  }
+  async reloadCatalog() {
+    this.allItems = await this.itemParser.getAllItems(this.plugin.settings.filenames);
+    const container = this.containerEl.children[1];
+    container.empty();
+    await this.renderCatalog(container);
+  }
+  getAllFields() {
+    const allFields = new Set();
+    this.allItems.forEach((item) => {
+      Object.keys(item).forEach((key) => {
+        allFields.add(key);
+      });
+    });
+    return Array.from(allFields);
+  }
+  async render() {
+    console.log("\u041D\u0430\u0447\u0430\u043B\u043E \u0440\u0435\u043D\u0434\u0435\u0440\u0438\u043D\u0433\u0430");
+    const container = this.containerEl.children[1];
+    container.empty();
+    await this.renderCatalog(container);
+    console.log("\u0420\u0435\u043D\u0434\u0435\u0440\u0438\u043D\u0433 \u0437\u0430\u0432\u0435\u0440\u0448\u0435\u043D");
+  }
+  updateStyles() {
+    const container = this.containerEl.children[1];
+    container.empty();
+    this.renderCatalog(container);
+  }
+  resetColumnWidths(newWidths) {
+    this.columnWidths = { ...newWidths };
+    this.updateColumnWidths();
+    const tableContainer = this.containerEl.querySelector(".catalog-table-container");
+    if (tableContainer) {
+      this.updateTable(tableContainer);
+    }
+  }
+  openFilterModal() {
+    new FilterModal(this.app, this).open();
+  }
+  saveColumnWidths() {
+    this.plugin.saveSettings();
+  }
+  addResizeHandle(th, header, index) {
+    const resizeHandle = th.createEl("div", {
+      cls: "resize-handle",
+      attr: {
+        style: "position: absolute; right: -3px; top: 0; bottom: 0; width: 6px; cursor: col-resize; z-index: 1;"
+      }
+    });
+    let startX;
+    let startWidth;
+    const handleMouseMove = (e) => {
+      const dx = e.clientX - startX;
+      const newWidth = Math.max(50, startWidth + dx);
+      this.updateColumnWidth(header, newWidth);
+    };
+    const stopResize = () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseup", stopResize);
+      document.body.style.cursor = "";
+      this.saveColumnWidths();
+    };
+    resizeHandle.addEventListener("mousedown", (e) => {
+      e.preventDefault();
+      startX = e.clientX;
+      startWidth = th.offsetWidth;
+      window.addEventListener("mousemove", handleMouseMove);
+      window.addEventListener("mouseup", stopResize);
+      document.body.style.cursor = "col-resize";
+    });
+  }
+};
+var FilterModal = class extends import_obsidian3.Modal {
+  constructor(app, view) {
+    super(app);
+    this.view = view;
+  }
+  onOpen() {
+    const { contentEl } = this;
+    contentEl.empty();
+    contentEl.createEl("h2", { text: "\u0424\u0438\u043B\u044C\u0442\u0440\u044B \u043A\u0430\u0442\u0430\u043B\u043E\u0433\u0430" });
+    this.view.plugin.settings.keys.forEach((key) => {
+      const filterContainer = contentEl.createEl("div");
+      filterContainer.createEl("label", { text: key });
+      filterContainer.createEl("input", {
+        type: "text",
+        placeholder: `\u0424\u0438\u043B\u044C\u0442\u0440 \u043F\u043E ${key}`
+      });
+    });
+    const applyButton = contentEl.createEl("button", { text: "\u041F\u0440\u0438\u043C\u0435\u043D\u0438\u0442\u044C" });
+    applyButton.addEventListener("click", () => {
+      this.close();
+      const tableContainer = this.view.containerEl.querySelector(".catalog-table-container");
+      if (tableContainer) {
+        this.view.updateTable(tableContainer);
+      }
+    });
+  }
+  onClose() {
+    const { contentEl } = this;
+    contentEl.empty();
+  }
+};
+
+// src/settings.ts
 var DEFAULT_SETTINGS = {
   filenames: ["\u041A\u0430\u0442\u0430\u043B\u043E\u0433 \u0442\u043E\u0432\u0430\u0440\u043E\u0432*", "\u041F\u0440\u0438\u043C\u0435\u0440*"],
   keys: ["\u041D\u0430\u0437\u0432\u0430\u043D\u0438\u0435", "\u0426\u0432\u0435\u0442", "\u0418\u0437\u043E\u0431\u0440\u0430\u0436\u0435\u043D\u0438\u0435"],
   preview_size: 100,
-  cssFile: "",
-  filterFields: []
+  cssFile: "styles.css",
+  filterFields: [],
+  renderEmbeds: true,
+  columnWidths: {},
+  showHeader: true,
+  headerText: "\u041A\u0430\u0442\u0430\u043B\u043E\u0433 \u0442\u043E\u0432\u0430\u0440\u043E\u0432",
+  openLocation: "right"
 };
-var CatalogPlugin = class extends import_obsidian2.Plugin {
+var SETTINGS_GROUPS = [
+  {
+    name: "\u041E\u0431\u0449\u0438\u0435 \u043D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0438",
+    settings: ["filenames", "keys", "headerText", "showHeader"]
+  },
+  {
+    name: "\u041D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0438 \u043E\u0442\u043E\u0431\u0440\u0430\u0436\u0435\u043D\u0438\u044F",
+    settings: ["preview_size", "renderEmbeds", "columnWidths"]
+  },
+  {
+    name: "\u041D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0438 \u0444\u0438\u043B\u044C\u0442\u0440\u0430\u0446\u0438\u0438",
+    settings: ["filterFields"]
+  }
+];
+
+// src/ui/CatalogSettingTab.ts
+var import_obsidian5 = __toModule(require("obsidian"));
+
+// src/ui/ColumnWidthModal.ts
+var import_obsidian4 = __toModule(require("obsidian"));
+var ColumnWidthModal = class extends import_obsidian4.Modal {
+  constructor(app, plugin) {
+    super(app);
+    this.plugin = plugin;
+  }
+  onOpen() {
+    const { contentEl } = this;
+    contentEl.empty();
+    contentEl.createEl("h2", { text: "\u041D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0430 \u0448\u0438\u0440\u0438\u043D\u044B \u0441\u0442\u043E\u043B\u0431\u0446\u043E\u0432" });
+    this.plugin.settings.keys.forEach((key) => {
+      new import_obsidian4.Setting(contentEl).setName(key).addSlider((slider) => slider.setLimits(50, 500, 10).setValue(this.plugin.settings.columnWidths[key] || 100).setDynamicTooltip().onChange(async (value) => {
+        this.plugin.settings.columnWidths[key] = value;
+        await this.plugin.saveSettings();
+        this.plugin.updateCatalogView();
+      }));
+    });
+    new import_obsidian4.Setting(contentEl).addButton((button) => button.setButtonText("\u0421\u0431\u0440\u043E\u0441\u0438\u0442\u044C").onClick(() => {
+      this.plugin.resetColumnWidths();
+      this.close();
+    })).addButton((button) => button.setButtonText("\u0417\u0430\u043A\u0440\u044B\u0442\u044C").onClick(() => {
+      this.close();
+    }));
+  }
+  onClose() {
+    const { contentEl } = this;
+    contentEl.empty();
+  }
+};
+
+// src/ui/CatalogSettingTab.ts
+var CatalogSettingTab = class extends import_obsidian5.PluginSettingTab {
+  constructor(app, plugin) {
+    super(app, plugin);
+    this.plugin = plugin;
+  }
+  async display() {
+    const { containerEl } = this;
+    containerEl.empty();
+    SETTINGS_GROUPS.forEach((group) => {
+      containerEl.createEl("h3", { text: group.name });
+      group.settings.forEach((settingKey) => {
+        if (this.isValidSettingKey(settingKey)) {
+          this.createSettingUI(containerEl, settingKey);
+        }
+      });
+    });
+    new import_obsidian5.Setting(containerEl).setName("\u0428\u0438\u0440\u0438\u043D\u0430 \u0441\u0442\u043E\u043B\u0431\u0446\u043E\u0432").setDesc("\u041D\u0430\u0441\u0442\u0440\u043E\u0439\u0442\u0435 \u0448\u0438\u0440\u0438\u043D\u0443 \u043A\u0430\u0436\u0434\u043E\u0433\u043E \u0441\u0442\u043E\u043B\u0431\u0446\u0430").addButton((button) => button.setButtonText("\u041D\u0430\u0441\u0442\u0440\u043E\u0438\u0442\u044C \u0448\u0438\u0440\u0438\u043D\u0443 \u0441\u0442\u043E\u043B\u0431\u0446\u043E\u0432").onClick(() => {
+      new ColumnWidthModal(this.app, this.plugin).open();
+    }));
+    new import_obsidian5.Setting(containerEl).setName("CSS \u0444\u0430\u0439\u043B").setDesc("\u0412\u044B\u0431\u0435\u0440\u0438\u0442\u0435 CSS \u0444\u0430\u0439\u043B \u0434\u043B\u044F \u0441\u0442\u0438\u043B\u0438\u0437\u0430\u0446\u0438\u0438 \u043A\u0430\u0442\u0430\u043B\u043E\u0433\u0430").addDropdown(async (dropdown) => {
+      const cssFiles = await this.plugin.getCssFiles();
+      cssFiles.forEach((file) => {
+        dropdown.addOption(file, file);
+      });
+      dropdown.setValue(this.plugin.settings.cssFile);
+      dropdown.onChange(async (value) => {
+        await this.plugin.switchStyles(value);
+      });
+    });
+  }
+  createSettingUI(containerEl, settingKey) {
+    switch (settingKey) {
+      case "filenames":
+        new import_obsidian5.Setting(containerEl).setName("\u0424\u0430\u0439\u043B\u044B \u043A\u0430\u0442\u0430\u043B\u043E\u0433\u0430").setDesc("\u0421\u043F\u0438\u0441\u043E\u043A \u0444\u0430\u0439\u043B\u043E\u0432, \u0441\u043E\u0434\u0435\u0440\u0436\u0430\u0449\u0438\u0445 \u0434\u0430\u043D\u043D\u044B\u0435 \u043A\u0430\u0442\u0430\u043B\u043E\u0433\u0430 (\u0440\u0430\u0437\u0434\u0435\u043B\u0435\u043D\u043D\u044B\u0435 \u0437\u0430\u043F\u044F\u0442\u044B\u043C\u0438)").addText((text) => text.setPlaceholder("catalog.md").setValue(this.plugin.settings.filenames.join(", ")).onChange(async (value) => {
+          this.plugin.settings.filenames = value.split(",").map((s) => s.trim());
+          await this.plugin.saveSettings();
+        }));
+        break;
+      case "keys":
+        new import_obsidian5.Setting(containerEl).setName("\u041A\u043B\u044E\u0447\u0438").setDesc("\u0421\u043F\u0438\u0441\u043E\u043A \u043A\u043B\u044E\u0447\u0435\u0439 \u0434\u043B\u044F \u043E\u0442\u043E\u0431\u0440\u0430\u0436\u0435\u043D\u0438\u044F \u0432 \u0442\u0430\u0431\u043B\u0438\u0446\u0435 (\u0440\u0430\u0437\u0434\u0435\u043B\u0435\u043D\u043D\u044B\u0435 \u0437\u0430\u043F\u044F\u0442\u044B\u043C\u0438)").addText((text) => text.setPlaceholder("\u041D\u0430\u0437\u0432\u0430\u043D\u0438\u0435, \u0426\u0435\u043D\u0430, \u041A\u0430\u0442\u0435\u0433\u043E\u0440\u0438\u044F").setValue(this.plugin.settings.keys.join(", ")).onChange(async (value) => {
+          this.plugin.settings.keys = value.split(",").map((s) => s.trim());
+          await this.plugin.saveSettings();
+        }));
+        break;
+      case "preview_size":
+        new import_obsidian5.Setting(containerEl).setName("\u0420\u0430\u0437\u043C\u0435\u0440 \u043F\u0440\u0435\u0434\u043F\u0440\u043E\u0441\u043C\u043E\u0442\u0440\u0430").setDesc("\u0423\u0441\u0442\u0430\u043D\u043E\u0432\u0438\u0442\u0435 \u0440\u0430\u0437\u043C\u0435\u0440 \u043F\u0440\u0435\u0434\u043F\u0440\u043E\u0441\u043C\u043E\u0442\u0440\u0430 \u0438\u0437\u043E\u0431\u0440\u0430\u0436\u0435\u043D\u0438\u0439 (\u0432 \u043F\u0438\u043A\u0441\u0435\u043B\u044F\u0445)").addSlider((slider) => slider.setLimits(50, 500, 10).setValue(this.plugin.settings.preview_size).setDynamicTooltip().onChange(async (value) => {
+          this.plugin.settings.preview_size = value;
+          await this.plugin.saveSettings();
+        }));
+        break;
+      case "filterFields":
+        new import_obsidian5.Setting(containerEl).setName("\u041F\u043E\u043B\u044F \u0434\u043B\u044F \u0444\u0438\u043B\u044C\u0442\u0440\u0430\u0446\u0438\u0438").setDesc("\u0412\u0432\u0435\u0434\u0438\u0442\u0435 \u043D\u0430\u0437\u0432\u0430\u043D\u0438\u044F \u043F\u043E\u043B\u0435\u0439 \u0447\u0435\u0440\u0435\u0437 \u0437\u0430\u043F\u044F\u0442\u0443\u044E. \u041E\u0441\u0442\u0430\u0432\u044C\u0442\u0435 \u043F\u0443\u0441\u0442\u044B\u043C \u0434\u043B\u044F \u0438\u0441\u043F\u043E\u043B\u044C\u0437\u043E\u0432\u0430\u043D\u0438\u044F \u0432\u0441\u0435\u0445 \u043F\u043E\u043B\u0435\u0439.").addText((text) => text.setValue(this.plugin.settings.filterFields.join(", ")).onChange(async (value) => {
+          this.plugin.settings.filterFields = value.split(",").map((s) => s.trim());
+          await this.plugin.saveSettings();
+        }));
+        break;
+      case "showHeader":
+        new import_obsidian5.Setting(containerEl).setName("\u041F\u043E\u043A\u0430\u0437\u044B\u0432\u0430\u0442\u044C \u0437\u0430\u0433\u043E\u043B\u043E\u0432\u043E\u043A").setDesc("\u0412\u043A\u043B\u044E\u0447\u0438\u0442\u044C \u0438\u043B\u0438 \u0432\u044B\u043A\u043B\u044E\u0447\u0438\u0442\u044C \u043E\u0442\u043E\u0431\u0440\u0430\u0436\u0435\u043D\u0438\u0435 \u0437\u0430\u0433\u043E\u043B\u043E\u0432\u043A\u0430 \u043A\u0430\u0442\u0430\u043B\u043E\u0433\u0430").addToggle((toggle) => toggle.setValue(this.plugin.settings.showHeader).onChange(async (value) => {
+          this.plugin.settings.showHeader = value;
+          await this.plugin.saveSettings();
+        }));
+        break;
+      case "headerText":
+        new import_obsidian5.Setting(containerEl).setName("\u0422\u0435\u043A\u0441\u0442 \u0437\u0430\u0433\u043E\u043B\u043E\u0432\u043A\u0430").setDesc("\u0423\u0441\u0442\u0430\u043D\u043E\u0432\u0438\u0442\u0435 \u0442\u0435\u043A\u0441\u0442 \u0437\u0430\u0433\u043E\u043B\u043E\u0432\u043A\u0430 \u043A\u0430\u0442\u0430\u043B\u043E\u0433\u0430").addText((text) => text.setPlaceholder("\u041A\u0430\u0442\u0430\u043B\u043E\u0433 \u0442\u043E\u0432\u0430\u0440\u043E\u0432").setValue(this.plugin.settings.headerText).onChange(async (value) => {
+          this.plugin.settings.headerText = value;
+          await this.plugin.saveSettings();
+        }));
+        break;
+      case "openLocation":
+        new import_obsidian5.Setting(containerEl).setName("\u0420\u0430\u0441\u043F\u043E\u043B\u043E\u0436\u0435\u043D\u0438\u0435 \u043F\u0440\u0438 \u043E\u0442\u043A\u0440\u044B\u0442\u0438\u0438").setDesc("\u0412\u044B\u0431\u0435\u0440\u0438\u0442\u0435, \u0433\u0434\u0435 \u0434\u043E\u043B\u0436\u0435\u043D \u043E\u0442\u043A\u0440\u044B\u0432\u0430\u0442\u044C\u0441\u044F \u043A\u0430\u0442\u0430\u043B\u043E\u0433").addDropdown((dropdown) => dropdown.addOption("left", "\u0421\u043B\u0435\u0432\u0430").addOption("right", "\u0421\u043F\u0440\u0430\u0432\u0430").addOption("tab", "\u0412 \u043D\u043E\u0432\u043E\u0439 \u0432\u043A\u043B\u0430\u0434\u043A\u0435").setValue(this.plugin.settings.openLocation).onChange(async (value) => {
+          this.plugin.settings.openLocation = value;
+          await this.plugin.saveSettings();
+        }));
+        break;
+    }
+  }
+  isValidSettingKey(key) {
+    return key in this.plugin.settings;
+  }
+};
+
+// src/utils.ts
+function matchesMask(filePath, mask) {
+  const regexPattern = mask.replace(/\*/g, ".*").replace(/\?/g, ".");
+  const regex = new RegExp(`^${regexPattern}$`, "i");
+  return regex.test(filePath);
+}
+
+// src/main.ts
+var CatalogPlugin = class extends import_obsidian6.Plugin {
   constructor() {
     super(...arguments);
     this.catalogView = null;
   }
   async onload() {
+    console.log("\u0417\u0430\u0433\u0440\u0443\u0437\u043A\u0430 \u043F\u043B\u0430\u0433\u0438\u043D\u0430 Catalog");
     await this.loadSettings();
     this.registerView(VIEW_TYPE_CATALOG, (leaf) => {
-      this.catalogView = new CatalogView(leaf, this.settings);
+      console.log("\u0421\u043E\u0437\u0434\u0430\u043D\u0438\u0435 \u043D\u043E\u0432\u043E\u0433\u043E CatalogView");
+      this.catalogView = new CatalogView(leaf, this);
       return this.catalogView;
     });
     this.addRibbonIcon("book", "\u041E\u0442\u043A\u0440\u044B\u0442\u044C \u043A\u0430\u0442\u0430\u043B\u043E\u0433", () => {
       this.activateView();
     });
     this.addSettingTab(new CatalogSettingTab(this.app, this));
-    this.loadStyles();
+    this.registerEvent(this.app.vault.on("modify", (file) => {
+      this.handleFileChange(file);
+    }));
+    this.registerEvent(this.app.vault.on("create", (file) => {
+      this.handleFileChange(file);
+    }));
+    this.registerEvent(this.app.vault.on("delete", (file) => {
+      this.handleFileChange(file);
+    }));
+    const updateButton = document.getElementById("update-button");
+    if (updateButton) {
+      updateButton.addEventListener("click", () => {
+        console.log("\u041A\u043D\u043E\u043F\u043A\u0430 \u043E\u0431\u043D\u043E\u0432\u043B\u0435\u043D\u0438\u044F \u043D\u0430\u0436\u0430\u0442\u0430");
+        this.updateEmbeddedContent();
+      });
+    }
+    this.reloadStyles();
+    this.addCommand({
+      id: "reset-column-widths",
+      name: "\u0421\u0431\u0440\u043E\u0441\u0438\u0442\u044C \u0448\u0438\u0440\u0438\u043D\u0443 \u0441\u0442\u043E\u043B\u0431\u0446\u043E\u0432",
+      callback: () => this.resetColumnWidths()
+    });
+  }
+  updateEmbeddedContent() {
+    console.log("\u041E\u0431\u043D\u043E\u0432\u043B\u0435\u043D\u0438\u0435 \u0432\u0441\u0442\u0440\u043E\u0435\u043D\u043D\u043E\u0433\u043E \u0441\u043E\u0434\u0435\u0440\u0436\u0438\u043C\u043E\u0433\u043E");
   }
   async onunload() {
     this.app.workspace.detachLeavesOfType(VIEW_TYPE_CATALOG);
   }
   async loadSettings() {
+    console.log("Loading settings");
     this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+    if (!this.settings.columnWidths) {
+      this.settings.columnWidths = {};
+    }
+    this.settings.keys.forEach((key) => {
+      if (!this.settings.columnWidths[key]) {
+        this.settings.columnWidths[key] = 100;
+      }
+    });
+    await this.saveSettings();
   }
   async saveSettings() {
+    console.log("Saving settings");
     await this.saveData(this.settings);
     this.updateCatalogView();
+    this.reloadStyles();
   }
   updateCatalogView() {
     var _a;
-    const catalogView = (_a = this.app.workspace.getLeavesOfType("catalog-view")[0]) == null ? void 0 : _a.view;
+    const catalogView = (_a = this.app.workspace.getLeavesOfType(VIEW_TYPE_CATALOG)[0]) == null ? void 0 : _a.view;
     if (catalogView) {
+      catalogView.updateColumnWidths();
       catalogView.reloadCatalog();
     }
   }
@@ -455,101 +995,104 @@ var CatalogPlugin = class extends import_obsidian2.Plugin {
     const { workspace } = this.app;
     let leaf = workspace.getLeavesOfType(VIEW_TYPE_CATALOG)[0];
     if (!leaf) {
-      const newLeaf = workspace.getRightLeaf(false);
-      if (newLeaf) {
-        await newLeaf.setViewState({ type: VIEW_TYPE_CATALOG, active: true });
-        leaf = newLeaf;
+      switch (this.settings.openLocation) {
+        case "left":
+          leaf = workspace.getLeftLeaf(false);
+          break;
+        case "right":
+          leaf = workspace.getRightLeaf(false);
+          break;
+        case "tab":
+          leaf = workspace.getLeaf("tab");
+          break;
+      }
+      if (leaf) {
+        await leaf.setViewState({ type: VIEW_TYPE_CATALOG, active: true });
       }
     }
     if (leaf) {
       workspace.revealLeaf(leaf);
     }
   }
-  reloadStyles() {
-    this.loadStyles();
-  }
-  loadStyles() {
-    const styleEl = document.createElement("style");
-    styleEl.id = "catalog-plugin-styles";
-    document.head.appendChild(styleEl);
-    if (this.settings.cssFile) {
-      this.loadCustomCSS(this.settings.cssFile);
-    } else {
-      styleEl.textContent = `
-                .image-preview-modal {
-                    display: flex;
-                    justify-content: center;
-                    align-items: center;
-                    padding: 20px;
-                }
-
-                .image-preview-modal img {
-                    max-width: 100%;
-                    max-height: 100%;
-                    object-fit: contain;
-                }
-            `;
+  async reloadStyles() {
+    console.log("Reloading styles");
+    const styleEl = document.getElementById("catalog-plugin-styles");
+    if (styleEl) {
+      styleEl.remove();
+    }
+    const newStyleEl = document.createElement("style");
+    newStyleEl.id = "catalog-plugin-styles";
+    document.head.appendChild(newStyleEl);
+    await this.loadCustomCSS("styles.css");
+    if (this.settings.cssFile && this.settings.cssFile !== "styles.css") {
+      await this.loadCustomCSS(this.settings.cssFile);
+    }
+    if (this.catalogView) {
+      this.catalogView.updateStyles();
     }
   }
   async loadCustomCSS(cssPath) {
-    const file = this.app.vault.getAbstractFileByPath(cssPath);
-    if (file instanceof import_obsidian2.TFile) {
-      const content = await this.app.vault.read(file);
+    let content = "";
+    try {
+      const pluginDir = this.manifest.dir || "";
+      const fullPath = `${pluginDir}/${cssPath}`;
+      content = await this.app.vault.adapter.read(fullPath);
       const styleEl = document.getElementById("catalog-plugin-styles");
-      if (styleEl) {
-        styleEl.textContent = content;
+      if (styleEl && content) {
+        styleEl.textContent += content;
+        console.log(`Applied CSS from ${cssPath}`);
+      } else {
+        throw new Error(`Failed to apply CSS from ${cssPath}`);
+      }
+    } catch (error) {
+      console.error(`Error loading CSS: ${error.message}`);
+    }
+  }
+  async loadStylesCSS() {
+    const pluginDir = this.manifest.dir || "";
+    const stylesPath = `${pluginDir}/styles.css`;
+    try {
+      const content = await this.app.vault.adapter.read(stylesPath);
+      return content;
+    } catch (error) {
+      console.error(`Failed to load styles.css from ${stylesPath}: ${error}`);
+      return "";
+    }
+  }
+  resetColumnWidths() {
+    var _a;
+    const defaultWidth = 100;
+    this.settings.columnWidths = Object.fromEntries(this.settings.keys.map((key) => [key, defaultWidth]));
+    this.saveSettings();
+    const catalogView = (_a = this.app.workspace.getLeavesOfType(VIEW_TYPE_CATALOG)[0]) == null ? void 0 : _a.view;
+    if (catalogView) {
+      catalogView.resetColumnWidths(this.settings.columnWidths);
+    }
+    this.updateCatalogView();
+  }
+  handleFileChange(file) {
+    if (file instanceof import_obsidian6.TFile) {
+      const shouldUpdate = this.settings.filenames.some((mask) => matchesMask(file.path, mask));
+      if (shouldUpdate) {
+        this.updateCatalogView();
       }
     }
   }
-};
-var CatalogSettingTab = class extends import_obsidian2.PluginSettingTab {
-  constructor(app, plugin) {
-    super(app, plugin);
-    this.plugin = plugin;
+  async getCssFiles() {
+    try {
+      const pluginDir = this.manifest.dir || "";
+      const files = await this.app.vault.adapter.list(pluginDir);
+      const cssFiles = files.files.filter((file) => file.endsWith(".css")).map((file) => file.replace(`${pluginDir}/`, ""));
+      console.log("CSS files found:", cssFiles);
+      return cssFiles;
+    } catch (error) {
+      console.error("Error reading plugin directory:", error);
+      return [];
+    }
   }
-  display() {
-    const { containerEl } = this;
-    containerEl.empty();
-    containerEl.createEl("h2", { text: "\u041D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0438 \u043A\u0430\u0442\u0430\u043B\u043E\u0433\u0430 \u0442\u043E\u0432\u0430\u0440\u043E\u0432" });
-    new import_obsidian2.Setting(containerEl).setName("\u041C\u0430\u0441\u043A\u0438 \u0444\u0430\u0439\u043B\u043E\u0432").setDesc("\u0412\u0432\u0435\u0434\u0438\u0442\u0435 \u043C\u0430\u0441\u043A\u0438 \u0444\u0430\u0439\u043B\u043E\u0432, \u0440\u0430\u0437\u0434\u0435\u043B\u0435\u043D\u043D\u044B\u0435 \u0437\u0430\u043F\u044F\u0442\u043E\u0439").addText((text) => text.setPlaceholder("\u041A\u0430\u0442\u0430\u043B\u043E\u0433 \u0442\u043E\u0432\u0430\u0440\u043E\u0432*, \u041F\u0440\u0438\u043C\u0435\u0440*").setValue(this.plugin.settings.filenames.join(", ")).onChange(async (value) => {
-      this.plugin.settings.filenames = value.split(",").map((s) => s.trim());
-      await this.plugin.saveSettings();
-    }));
-    new import_obsidian2.Setting(containerEl).setName("\u041A\u043B\u044E\u0447\u0438").setDesc("\u0412\u0432\u0435\u0434\u0438\u0442\u0435 \u043A\u043B\u044E\u0447\u0438 (\u0441\u0442\u043E\u043B\u0431\u0446\u044B) \u0434\u043B\u044F \u043E\u0442\u043E\u0431\u0440\u0430\u0436\u0435\u043D\u0438\u044F, \u0440\u0430\u0437\u0434\u0435\u043B\u0435\u043D\u043D\u044B\u0435 \u0437\u0430\u043F\u044F\u0442\u043E\u0439").addText((text) => text.setPlaceholder("\u041D\u0430\u0437\u0432\u0430\u043D\u0438\u0435, \u0426\u0432\u0435\u0442, \u0418\u0437\u043E\u0431\u0440\u0430\u0436\u0435\u043D\u0438\u0435").setValue(this.plugin.settings.keys.join(", ")).onChange(async (value) => {
-      this.plugin.settings.keys = value.split(",").map((s) => s.trim());
-      await this.plugin.saveSettings();
-    }));
-    new import_obsidian2.Setting(containerEl).setName("\u0420\u0430\u0437\u043C\u0435\u0440 \u043F\u0440\u0435\u0434\u043F\u0440\u043E\u0441\u043C\u043E\u0442\u0440\u0430").setDesc("\u0423\u0441\u0442\u0430\u043D\u043E\u0432\u0438\u0442\u0435 \u0440\u0430\u0437\u043C\u0435\u0440 \u043F\u0440\u0435\u0434\u043F\u0440\u043E\u0441\u043C\u043E\u0442\u0440\u0430 \u0438\u0437\u043E\u0431\u0440\u0430\u0436\u0435\u043D\u0438\u0439 (\u0432 \u043F\u0438\u043A\u0441\u0435\u043B\u044F\u0445)").addSlider((slider) => slider.setLimits(50, 300, 10).setValue(this.plugin.settings.preview_size).setDynamicTooltip().onChange(async (value) => {
-      this.plugin.settings.preview_size = value;
-      await this.plugin.saveSettings();
-    }));
-    new import_obsidian2.Setting(containerEl).setName("CSS \u0444\u0430\u0439\u043B").setDesc("\u0412\u044B\u0431\u0435\u0440\u0438\u0442\u0435 CSS \u0444\u0430\u0439\u043B \u0434\u043B\u044F \u0441\u0442\u0438\u043B\u0438\u0437\u0430\u0446\u0438\u0438 \u043A\u0430\u0442\u0430\u043B\u043E\u0433\u0430").addDropdown((dropdown) => {
-      const cssFiles = this.getCSSFiles();
-      cssFiles.unshift("");
-      dropdown.addOptions(Object.fromEntries(cssFiles.map((file) => [file, file || "\u041F\u043E \u0443\u043C\u043E\u043B\u0447\u0430\u043D\u0438\u044E"]))).setValue(this.plugin.settings.cssFile).onChange(async (value) => {
-        this.plugin.settings.cssFile = value;
-        await this.plugin.saveSettings();
-        this.plugin.reloadStyles();
-      });
-    });
-    new import_obsidian2.Setting(containerEl).setName("\u041F\u043E\u043B\u044F \u0434\u043B\u044F \u0444\u0438\u043B\u044C\u0442\u0440\u0430\u0446\u0438\u0438").setDesc("\u0412\u0432\u0435\u0434\u0438\u0442\u0435 \u043D\u0430\u0437\u0432\u0430\u043D\u0438\u044F \u043F\u043E\u043B\u0435\u0439 \u0447\u0435\u0440\u0435\u0437 \u0437\u0430\u043F\u044F\u0442\u0443\u044E. \u041E\u0441\u0442\u0430\u0432\u044C\u0442\u0435 \u043F\u0443\u0441\u0442\u044B\u043C \u0434\u043B\u044F \u0438\u0441\u043F\u043E\u043B\u044C\u0437\u043E\u0432\u0430\u043D\u0438\u044F \u0432\u0441\u0435\u0445 \u043F\u043E\u043B\u0435\u0439.").addText((text) => text.setPlaceholder("\u043F\u043E\u043B\u04351,\u043F\u043E\u043B\u04352,\u043F\u043E\u043B\u04353").setValue(this.plugin.settings.filterFields.join(",")).onChange(async (value) => {
-      this.plugin.settings.filterFields = value.split(",").map((field) => field.trim()).filter((field) => field !== "");
-      await this.plugin.saveSettings();
-      this.plugin.updateCatalogView();
-    }));
-  }
-  getCSSFiles() {
-    const cssFiles = [];
-    const searchCSSFiles = (folder) => {
-      for (const child of folder.children) {
-        if (child instanceof import_obsidian2.TFile && child.extension === "css") {
-          cssFiles.push(child.path);
-        } else if (child instanceof import_obsidian2.TFolder) {
-          searchCSSFiles(child);
-        }
-      }
-    };
-    searchCSSFiles(this.app.vault.getRoot());
-    return cssFiles;
+  async switchStyles(cssFile) {
+    this.settings.cssFile = cssFile;
+    await this.saveSettings();
+    await this.reloadStyles();
   }
 };

@@ -6,11 +6,24 @@
   "keys": [
     "Название",
     "Цвет",
-    "Изображение"
+    "Изображение",
+    "Вес"
   ],
-  "preview_size": 260,
+  "preview_size": 160,
   "cssFile": "styles.css",
   "filterFields": [
-    "Название"
-  ]
+    "Название",
+    "Цвет"
+  ],
+  "renderEmbeds": true,
+  "columnWidths": {
+    "Название": 100,
+    "Цвет": 100,
+    "Изображение": 100,
+    "Вес": 100
+  },
+  "showHeader": false,
+  "headerText": "Каталог",
+  "openLocation": "tab",
+  "customCSS": []
 }
