@@ -147,6 +147,15 @@ var LinkRenderer = class {
       if (match) {
         [, linkText, filePath] = match;
         filePath = decodeURIComponent(filePath);
+        const isImage = filePath && [".png", ".jpg", ".jpeg", ".gif", ".svg", ".webp"].some((ext) => filePath.toLowerCase().endsWith(ext));
+        if (isImage) {
+          const linkContainer = container.createEl("div", { cls: "catalog-link-container" });
+          this.createImageThumbnail(linkContainer, filePath, linkText);
+          this.createSimpleLink(linkContainer, filePath, linkText);
+        } else {
+          this.createSimpleLink(container, filePath, linkText);
+        }
+        return;
       }
     } else if (value.startsWith("[[") && value.endsWith("]]")) {
       const parts = value.slice(2, -2).split("|").map((s) => s.trim());
@@ -181,23 +190,38 @@ var LinkRenderer = class {
       container.appendChild(document.createTextNode(value));
     }
   }
-  renderMediaEmbed(container, file) {
+  createImageThumbnail(container, filePath, altText) {
     const imgContainer = container.createEl("div", {
       cls: "catalog-image-container",
       attr: {
-        style: `width: ${this.view.plugin.settings.preview_size}px; height: ${this.view.plugin.settings.preview_size}px; display: flex; align-items: center; justify-content: center; overflow: hidden; min-width: ${this.view.plugin.settings.preview_size}px; min-height: ${this.view.plugin.settings.preview_size}px;`
+        style: `width: ${this.view.plugin.settings.preview_size}px; height: ${this.view.plugin.settings.preview_size}px; display: inline-block; margin-right: 10px; vertical-align: middle;`
       }
     });
+    const file = this.app.vault.getAbstractFileByPath(filePath);
     const imgElement = imgContainer.createEl("img", {
       attr: {
-        src: this.app.vault.getResourcePath(file),
-        alt: file.name,
+        src: file instanceof import_obsidian2.TFile ? this.app.vault.getResourcePath(file) : this.getPlaceholderImagePath(),
+        alt: altText || filePath,
         style: `max-width: 100%; max-height: 100%; object-fit: contain;`
       }
     });
-    imgElement.addEventListener("click", () => {
-      new ImageModal(this.app, file).open();
+    imgElement.addEventListener("error", () => {
+      imgElement.src = this.getPlaceholderImagePath();
     });
+    imgElement.addEventListener("click", () => {
+      if (file instanceof import_obsidian2.TFile) {
+        new ImageModal(this.app, file).open();
+      }
+    });
+  }
+  getPlaceholderImagePath() {
+    return "data:image/svg+xml;charset=utf-8," + encodeURIComponent(`
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="red" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="15" y1="9" x2="9" y2="15"></line>
+                <line x1="9" y1="9" x2="15" y2="15"></line>
+            </svg>
+        `);
   }
   async renderTextEmbed(container, file) {
     const embedContainer = container.createEl("div", { cls: "embedded-content" });
@@ -246,6 +270,24 @@ var LinkRenderer = class {
         targetEl: link,
         linktext: fileName
       });
+    });
+  }
+  renderMediaEmbed(container, file) {
+    const imgContainer = container.createEl("div", {
+      cls: "catalog-image-container",
+      attr: {
+        style: `width: ${this.view.plugin.settings.preview_size}px; height: ${this.view.plugin.settings.preview_size}px; display: flex; align-items: center; justify-content: center; overflow: hidden; min-width: ${this.view.plugin.settings.preview_size}px; min-height: ${this.view.plugin.settings.preview_size}px;`
+      }
+    });
+    const imgElement = imgContainer.createEl("img", {
+      attr: {
+        src: this.app.vault.getResourcePath(file),
+        alt: file.name,
+        style: `max-width: 100%; max-height: 100%; object-fit: contain;`
+      }
+    });
+    imgElement.addEventListener("click", () => {
+      new ImageModal(this.app, file).open();
     });
   }
 };
@@ -767,7 +809,7 @@ var DEFAULT_SETTINGS = {
 var SETTINGS_GROUPS = [
   {
     name: "\u041E\u0431\u0449\u0438\u0435 \u043D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0438",
-    settings: ["filenames", "keys", "itemTypes", "headerText", "showHeader"]
+    settings: ["filenames", "keys", "itemTypes", "headerText", "showHeader", "openLocation"]
   },
   {
     name: "\u041D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0438 \u043E\u0442\u043E\u0431\u0440\u0430\u0436\u0435\u043D\u0438\u044F",
@@ -843,59 +885,80 @@ var CatalogSettingTab = class extends import_obsidian5.PluginSettingTab {
         await this.plugin.switchStyles(value);
       });
     });
-    new import_obsidian5.Setting(containerEl).setName("\u0422\u0438\u043F\u044B \u044D\u043B\u0435\u043C\u0435\u043D\u0442\u043E\u0432").setDesc("\u0412\u0432\u0435\u0434\u0438\u0442\u0435 \u0442\u0438\u043F\u044B \u044D\u043B\u0435\u043C\u0435\u043D\u0442\u043E\u0432, \u0440\u0430\u0437\u0434\u0435\u043B\u0435\u043D\u043D\u044B\u0435 \u0437\u0430\u043F\u044F\u0442\u043E\u0439 (\u043D\u0430\u043F\u0440\u0438\u043C\u0435\u0440, \u0422\u043E\u0432\u0430\u0440, \u041A\u043D\u0438\u0433\u0430)").addText((text) => text.setPlaceholder("\u0422\u043E\u0432\u0430\u0440, \u041A\u043D\u0438\u0433\u0430").setValue(this.plugin.settings.itemTypes.join(", ")).onChange(async (value) => {
-      this.plugin.settings.itemTypes = value.split(",").map((item) => item.trim());
-      await this.plugin.saveSettings();
-    }));
   }
   isValidSettingKey(key) {
     return key in this.plugin.settings;
   }
   createSettingUI(containerEl, settingKey) {
+    const setting = new import_obsidian5.Setting(containerEl).setName(this.getSettingName(settingKey)).setDesc(this.getSettingDescription(settingKey));
     switch (settingKey) {
       case "filenames":
-        new import_obsidian5.Setting(containerEl).setName("\u0424\u0430\u0439\u043B\u044B \u043A\u0430\u0442\u0430\u043B\u043E\u0433\u0430").setDesc("\u0421\u043F\u0438\u0441\u043E\u043A \u0444\u0430\u0439\u043B\u043E\u0432, \u0441\u043E\u0434\u0435\u0440\u0436\u0430\u0449\u0438\u0445 \u0434\u0430\u043D\u043D\u044B\u0435 \u043A\u0430\u0442\u0430\u043B\u043E\u0433\u0430 (\u0440\u0430\u0437\u0434\u0435\u043B\u0435\u043D\u043D\u044B\u0435 \u0437\u0430\u043F\u044F\u0442\u044B\u043C\u0438)").addText((text) => text.setPlaceholder("catalog.md").setValue(this.plugin.settings.filenames.join(", ")).onChange(async (value) => {
-          this.plugin.settings.filenames = value.split(",").map((s) => s.trim());
-          await this.plugin.saveSettings();
-        }));
-        break;
       case "keys":
-        new import_obsidian5.Setting(containerEl).setName("\u041A\u043B\u044E\u0447\u0438").setDesc("\u0421\u043F\u0438\u0441\u043E\u043A \u043A\u043B\u044E\u0447\u0435\u0439 \u0434\u043B\u044F \u043E\u0442\u043E\u0431\u0440\u0430\u0436\u0435\u043D\u0438\u044F \u0432 \u0442\u0430\u0431\u043B\u0438\u0446\u0435 (\u0440\u0430\u0437\u0434\u0435\u043B\u0435\u043D\u043D\u044B\u0435 \u0437\u0430\u043F\u044F\u0442\u044B\u043C\u0438)").addText((text) => text.setPlaceholder("\u041D\u0430\u0437\u0432\u0430\u043D\u0438\u0435, \u0426\u0435\u043D\u0430, \u041A\u0430\u0442\u0435\u0433\u043E\u0440\u0438\u044F").setValue(this.plugin.settings.keys.join(", ")).onChange(async (value) => {
-          this.plugin.settings.keys = value.split(",").map((s) => s.trim());
+      case "filterFields":
+      case "itemTypes":
+        setting.addTextArea((text) => text.setPlaceholder("\u0412\u0432\u0435\u0434\u0438\u0442\u0435 \u0437\u043D\u0430\u0447\u0435\u043D\u0438\u044F, \u0440\u0430\u0437\u0434\u0435\u043B\u0435\u043D\u043D\u044B\u0435 \u0437\u0430\u043F\u044F\u0442\u043E\u0439").setValue(this.plugin.settings[settingKey].join(", ")).onChange(async (value) => {
+          this.plugin.settings[settingKey] = value.split(",").map((item) => item.trim());
           await this.plugin.saveSettings();
         }));
         break;
       case "preview_size":
-        new import_obsidian5.Setting(containerEl).setName("\u0420\u0430\u0437\u043C\u0435\u0440 \u043F\u0440\u0435\u0434\u043F\u0440\u043E\u0441\u043C\u043E\u0442\u0440\u0430").setDesc("\u0423\u0441\u0442\u0430\u043D\u043E\u0432\u0438\u0442\u0435 \u0440\u0430\u0437\u043C\u0435\u0440 \u043F\u0440\u0435\u0434\u043F\u0440\u043E\u0441\u043C\u043E\u0442\u0440\u0430 \u0438\u0437\u043E\u0431\u0440\u0430\u0436\u0435\u043D\u0438\u0439 (\u0432 \u043F\u0438\u043A\u0441\u0435\u043B\u044F\u0445)").addSlider((slider) => slider.setLimits(50, 500, 10).setValue(this.plugin.settings.preview_size).setDynamicTooltip().onChange(async (value) => {
+        setting.addSlider((slider) => slider.setLimits(50, 500, 10).setValue(this.plugin.settings.preview_size).setDynamicTooltip().onChange(async (value) => {
           this.plugin.settings.preview_size = value;
           await this.plugin.saveSettings();
         }));
         break;
-      case "filterFields":
-        new import_obsidian5.Setting(containerEl).setName("\u041F\u043E\u043B\u044F \u0434\u043B\u044F \u0444\u0438\u043B\u044C\u0442\u0440\u0430\u0446\u0438\u0438").setDesc("\u0412\u0432\u0435\u0434\u0438\u0442\u0435 \u043D\u0430\u0437\u0432\u0430\u043D\u0438\u044F \u043F\u043E\u043B\u0435\u0439 \u0447\u0435\u0440\u0435\u0437 \u0437\u0430\u043F\u044F\u0442\u0443\u044E. \u041E\u0441\u0442\u0430\u0432\u044C\u0442\u0435 \u043F\u0443\u0441\u0442\u044B\u043C \u0434\u043B\u044F \u0438\u0441\u043F\u043E\u043B\u044C\u0437\u043E\u0432\u0430\u043D\u0438\u044F \u0432\u0441\u0435\u0445 \u043F\u043E\u043B\u0435\u0439.").addText((text) => text.setValue(this.plugin.settings.filterFields.join(", ")).onChange(async (value) => {
-          this.plugin.settings.filterFields = value.split(",").map((s) => s.trim());
-          await this.plugin.saveSettings();
-        }));
-        break;
+      case "renderEmbeds":
       case "showHeader":
-        new import_obsidian5.Setting(containerEl).setName("\u041F\u043E\u043A\u0430\u0437\u044B\u0432\u0430\u0442\u044C \u0437\u0430\u0433\u043E\u043B\u043E\u0432\u043E\u043A").setDesc("\u0412\u043A\u043B\u044E\u0447\u0438\u0442\u044C \u0438\u043B\u0438 \u0432\u044B\u043A\u043B\u044E\u0447\u0438\u0442\u044C \u043E\u0442\u043E\u0431\u0440\u0430\u0436\u0435\u043D\u0438\u0435 \u0437\u0430\u0433\u043E\u043B\u043E\u0432\u043A\u0430 \u043A\u0430\u0442\u0430\u043B\u043E\u0433\u0430").addToggle((toggle) => toggle.setValue(this.plugin.settings.showHeader).onChange(async (value) => {
-          this.plugin.settings.showHeader = value;
+        setting.addToggle((toggle) => toggle.setValue(this.plugin.settings[settingKey]).onChange(async (value) => {
+          this.plugin.settings[settingKey] = value;
           await this.plugin.saveSettings();
         }));
         break;
       case "headerText":
-        new import_obsidian5.Setting(containerEl).setName("\u0422\u0435\u043A\u0441\u0442 \u0437\u0430\u0433\u043E\u043B\u043E\u0432\u043A\u0430").setDesc("\u0423\u0441\u0442\u0430\u043D\u043E\u0432\u0438\u0442\u0435 \u0442\u0435\u043A\u0441\u0442 \u0437\u0430\u0433\u043E\u043B\u043E\u0432\u043A\u0430 \u043A\u0430\u0442\u0430\u043B\u043E\u0433\u0430").addText((text) => text.setPlaceholder("\u041A\u0430\u0442\u0430\u043B\u043E\u0433 \u0442\u043E\u0432\u0430\u0440\u043E\u0432").setValue(this.plugin.settings.headerText).onChange(async (value) => {
+        setting.addText((text) => text.setPlaceholder("\u0412\u0432\u0435\u0434\u0438\u0442\u0435 \u0442\u0435\u043A\u0441\u0442 \u0437\u0430\u0433\u043E\u043B\u043E\u0432\u043A\u0430").setValue(this.plugin.settings.headerText).onChange(async (value) => {
           this.plugin.settings.headerText = value;
           await this.plugin.saveSettings();
         }));
         break;
       case "openLocation":
-        new import_obsidian5.Setting(containerEl).setName("\u0420\u0430\u0441\u043F\u043E\u043B\u043E\u0436\u0435\u043D\u0438\u0435 \u043F\u0440\u0438 \u043E\u0442\u043A\u0440\u044B\u0442\u0438\u0438").setDesc("\u0412\u044B\u0431\u0435\u0440\u0438\u0442\u0435, \u0433\u0434\u0435 \u0434\u043E\u043B\u0436\u0435\u043D \u043E\u0442\u043A\u0440\u044B\u0432\u0430\u0442\u044C\u0441\u044F \u043A\u0430\u0442\u0430\u043B\u043E\u0433").addDropdown((dropdown) => dropdown.addOption("left", "\u0421\u043B\u0435\u0432\u0430").addOption("right", "\u0421\u043F\u0440\u0430\u0432\u0430").addOption("tab", "\u0412 \u043D\u043E\u0432\u043E\u0439 \u0432\u043A\u043B\u0430\u0434\u043A\u0435").setValue(this.plugin.settings.openLocation).onChange(async (value) => {
+        setting.addDropdown((dropdown) => dropdown.addOption("left", "\u0421\u043B\u0435\u0432\u0430").addOption("right", "\u0421\u043F\u0440\u0430\u0432\u0430").addOption("tab", "\u041D\u043E\u0432\u0430\u044F \u0432\u043A\u043B\u0430\u0434\u043A\u0430").setValue(this.plugin.settings.openLocation).onChange(async (value) => {
           this.plugin.settings.openLocation = value;
           await this.plugin.saveSettings();
         }));
         break;
     }
+  }
+  getSettingName(settingKey) {
+    const names = {
+      filenames: "\u0418\u043C\u0435\u043D\u0430 \u0444\u0430\u0439\u043B\u043E\u0432",
+      keys: "\u041A\u043B\u044E\u0447\u0438",
+      itemTypes: "\u0422\u0438\u043F\u044B \u044D\u043B\u0435\u043C\u0435\u043D\u0442\u043E\u0432",
+      preview_size: "\u0420\u0430\u0437\u043C\u0435\u0440 \u043F\u0440\u0435\u0434\u043F\u0440\u043E\u0441\u043C\u043E\u0442\u0440\u0430",
+      cssFile: "CSS \u0444\u0430\u0439\u043B",
+      filterFields: "\u041F\u043E\u043B\u044F \u0434\u043B\u044F \u0444\u0438\u043B\u044C\u0442\u0440\u0430\u0446\u0438\u0438",
+      renderEmbeds: "\u041E\u0442\u043E\u0431\u0440\u0430\u0436\u0430\u0442\u044C \u0432\u0441\u0442\u0440\u043E\u0435\u043D\u043D\u043E\u0435 \u0441\u043E\u0434\u0435\u0440\u0436\u0438\u043C\u043E\u0435",
+      columnWidths: "\u0428\u0438\u0440\u0438\u043D\u0430 \u0441\u0442\u043E\u043B\u0431\u0446\u043E\u0432",
+      showHeader: "\u041F\u043E\u043A\u0430\u0437\u044B\u0432\u0430\u0442\u044C \u0437\u0430\u0433\u043E\u043B\u043E\u0432\u043E\u043A",
+      headerText: "\u0422\u0435\u043A\u0441\u0442 \u0437\u0430\u0433\u043E\u043B\u043E\u0432\u043A\u0430",
+      openLocation: "\u0420\u0430\u0441\u043F\u043E\u043B\u043E\u0436\u0435\u043D\u0438\u0435 \u043F\u0440\u0438 \u043E\u0442\u043A\u0440\u044B\u0442\u0438\u0438"
+    };
+    return names[settingKey] || settingKey;
+  }
+  getSettingDescription(settingKey) {
+    const descriptions = {
+      filenames: "\u0418\u043C\u0435\u043D\u0430 \u0444\u0430\u0439\u043B\u043E\u0432, \u043A\u043E\u0442\u043E\u0440\u044B\u0435 \u0431\u0443\u0434\u0443\u0442 \u0432\u043A\u043B\u044E\u0447\u0435\u043D\u044B \u0432 \u043A\u0430\u0442\u0430\u043B\u043E\u0433 (\u0440\u0430\u0437\u0434\u0435\u043B\u0438\u0442\u0435 \u0437\u0430\u043F\u044F\u0442\u043E\u0439)",
+      keys: "\u041A\u043B\u044E\u0447\u0438 \u0434\u043B\u044F \u043E\u0442\u043E\u0431\u0440\u0430\u0436\u0435\u043D\u0438\u044F \u0432 \u0442\u0430\u0431\u043B\u0438\u0446\u0435 (\u0440\u0430\u0437\u0434\u0435\u043B\u0438\u0442\u0435 \u0437\u0430\u043F\u044F\u0442\u043E\u0439)",
+      itemTypes: "\u0422\u0438\u043F\u044B \u044D\u043B\u0435\u043C\u0435\u043D\u0442\u043E\u0432 \u0434\u043B\u044F \u043A\u0430\u0442\u0430\u043B\u043E\u0433\u0430 (\u0440\u0430\u0437\u0434\u0435\u043B\u0438\u0442\u0435 \u0437\u0430\u043F\u044F\u0442\u043E\u0439)",
+      preview_size: "\u0420\u0430\u0437\u043C\u0435\u0440 \u043F\u0440\u0435\u0434\u043F\u0440\u043E\u0441\u043C\u043E\u0442\u0440\u0430 \u0438\u0437\u043E\u0431\u0440\u0430\u0436\u0435\u043D\u0438\u0439 (\u0432 \u043F\u0438\u043A\u0441\u0435\u043B\u044F\u0445)",
+      cssFile: "CSS \u0444\u0430\u0439\u043B \u0434\u043B\u044F \u0441\u0442\u0438\u043B\u0438\u0437\u0430\u0446\u0438\u0438 \u043A\u0430\u0442\u0430\u043B\u043E\u0433\u0430",
+      filterFields: "\u041F\u043E\u043B\u044F, \u043F\u043E \u043A\u043E\u0442\u043E\u0440\u044B\u043C \u043C\u043E\u0436\u043D\u043E \u0444\u0438\u043B\u044C\u0442\u0440\u043E\u0432\u0430\u0442\u044C (\u0440\u0430\u0437\u0434\u0435\u043B\u0438\u0442\u0435 \u0437\u0430\u043F\u044F\u0442\u043E\u0439)",
+      renderEmbeds: "\u041E\u0442\u043E\u0431\u0440\u0430\u0436\u0430\u0442\u044C \u0432\u0441\u0442\u0440\u043E\u0435\u043D\u043D\u043E\u0435 \u0441\u043E\u0434\u0435\u0440\u0436\u0438\u043C\u043E\u0435 \u0432 \u043A\u0430\u0442\u0430\u043B\u043E\u0433\u0435",
+      columnWidths: "\u0428\u0438\u0440\u0438\u043D\u0430 \u0441\u0442\u043E\u043B\u0431\u0446\u043E\u0432 \u0432 \u0442\u0430\u0431\u043B\u0438\u0446\u0435",
+      showHeader: "\u041F\u043E\u043A\u0430\u0437\u044B\u0432\u0430\u0442\u044C \u0437\u0430\u0433\u043E\u043B\u043E\u0432\u043E\u043A \u043A\u0430\u0442\u0430\u043B\u043E\u0433\u0430",
+      headerText: "\u0422\u0435\u043A\u0441\u0442 \u0437\u0430\u0433\u043E\u043B\u043E\u0432\u043A\u0430 \u043A\u0430\u0442\u0430\u043B\u043E\u0433\u0430",
+      openLocation: "\u0413\u0434\u0435 \u043E\u0442\u043A\u0440\u044B\u0432\u0430\u0442\u044C \u043A\u0430\u0442\u0430\u043B\u043E\u0433"
+    };
+    return descriptions[settingKey] || "";
   }
 };
 

@@ -150,6 +150,7 @@
     /* Максимальная высота изображения */
     object-fit: contain;
     /* Сохранение пропорций изображения */
+    background-color: #f0f0f0; /* Фон для отсутствующих изображений */
 }
 
 /* Стили для встроенного содержимого */
@@ -335,4 +336,20 @@
     display: inline-block;
     margin-left: 10px;
     /* Отступ слева от текста */
+}
+
+/* Стили для нового контейнера */
+.catalog-link-container {
+    display: flex;
+    align-items: center;
+    margin-bottom: 5px;
+}
+
+.catalog-link-container .catalog-image-container {
+    margin-right: 10px;
+}
+
+.catalog-link-container .catalog-link {
+    display: inline-block;
+    vertical-align: middle;
 }
