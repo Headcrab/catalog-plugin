@@ -14,8 +14,8 @@
     "Товар",
     "Книга"
   ],
-  "preview_size": 270,
-  "cssFile": "styles.css",
+  "preview_size": 90,
+  "cssFile": "altstyles.css",
   "filterFields": [
     "Название",
     "Цвет"

@@ -500,25 +500,6 @@ var CatalogView = class extends import_obsidian3.ItemView {
     console.log("\u041E\u0442\u043A\u0440\u044B\u0442\u0438\u0435 \u0432\u0438\u0434\u0430 \u043A\u0430\u0442\u0430\u043B\u043E\u0433\u0430");
     const container = this.containerEl.children[1];
     container.empty();
-    const headerContainer = container.createEl("div", { cls: "catalog-header" });
-    const titleEl = headerContainer.createEl("h2", { text: "\u041A\u0430\u0442\u0430\u043B\u043E\u0433" });
-    titleEl.style.marginRight = "auto";
-    const controlsContainer = headerContainer.createEl("div", { cls: "catalog-controls" });
-    const searchInput = controlsContainer.createEl("input", {
-      type: "search",
-      placeholder: "\u041F\u043E\u0438\u0441\u043A...",
-      cls: "catalog-search"
-    });
-    const updateButton = controlsContainer.createEl("button", {
-      text: "\u041E\u0431\u043D\u043E\u0432\u0438\u0442\u044C",
-      cls: "catalog-update-btn"
-    });
-    updateButton.addEventListener("click", () => this.reloadCatalog());
-    const filterButton = controlsContainer.createEl("button", {
-      text: "\u0424\u0438\u043B\u044C\u0442\u0440\u044B",
-      cls: "catalog-filter-btn"
-    });
-    filterButton.addEventListener("click", () => this.openFilterModal());
     await this.renderCatalog(container);
     console.log("\u0420\u0435\u043D\u0434\u0435\u0440\u0438\u043D\u0433 \u043A\u0430\u0442\u0430\u043B\u043E\u0433\u0430 \u0437\u0430\u0432\u0435\u0440\u0448\u0435\u043D");
   }
@@ -526,36 +507,66 @@ var CatalogView = class extends import_obsidian3.ItemView {
   }
   async renderCatalog(container) {
     const mainContainer = container.createEl("div", { cls: "catalog-container" });
+    const headerContainer = mainContainer.createEl("div", { cls: "catalog-header" });
     if (this.plugin.settings.showHeader) {
-      mainContainer.createEl("h4", { text: this.plugin.settings.headerText, cls: "catalog-title" });
+      headerContainer.createEl("h2", { text: this.plugin.settings.headerText, cls: "catalog-title" });
     }
+    const controlsContainer = headerContainer.createEl("div", { cls: "catalog-controls" });
+    this.createFilters(controlsContainer);
+    this.createPagination(controlsContainer);
+    const tableContainer = mainContainer.createEl("div", { cls: "catalog-table-container" });
     this.allItems = await this.itemParser.getAllItems(this.plugin.settings.filenames);
     console.log("\u0417\u0430\u0433\u0440\u0443\u0436\u0435\u043D\u043D\u044B\u0435 \u044D\u043B\u0435\u043C\u0435\u043D\u0442\u044B:", this.allItems);
     if (this.allItems.length === 0) {
-      mainContainer.createEl("p", { text: "\u041F\u0440\u0435\u0434\u0443\u043F\u0440\u0435\u0436\u0434\u0435\u043D\u0438\u0435: \u0412 \u0437\u0430\u043C\u0435\u0442\u043A\u0430\u0445 \u043A\u0430\u0442\u0430\u043B\u043E\u0433\u0430 \u0442\u043E\u0432\u0430\u0440\u043E\u0432 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D\u043E \u0434\u0430\u043D\u043D\u044B\u0445 \u0432 \u043E\u0436\u0438\u0434\u0430\u0435\u043C\u043E\u043C \u0444\u043E\u0440\u043C\u0430\u0442\u0435." });
+      tableContainer.createEl("p", { text: "\u041F\u0440\u0435\u0434\u0443\u043F\u0440\u0435\u0436\u0434\u0435\u043D\u0438\u0435: \u0412 \u0437\u0430\u043C\u0435\u0442\u043A\u0430\u0445 \u043A\u0430\u0442\u0430\u043B\u043E\u0433\u0430 \u0442\u043E\u0432\u0430\u0440\u043E\u0432 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D\u043E \u0434\u0430\u043D\u043D\u044B\u0445 \u0432 \u043E\u0436\u0438\u0434\u0430\u0435\u043C\u043E\u043C \u0444\u043E\u0440\u043C\u0430\u0442\u0435." });
       return;
     }
-    const controls = this.createControls(mainContainer);
-    const tableContainer = mainContainer.createEl("div", { cls: "catalog-table-container" });
     this.updateTable(tableContainer);
-    controls.applyFilterButton.addEventListener("click", () => this.updateTable(tableContainer));
-    controls.resetFilterButton.addEventListener("click", () => this.resetFiltersAndColumns(mainContainer));
-    controls.itemsPerPageSelect.addEventListener("change", () => {
-      this.itemsPerPage = parseInt(controls.itemsPerPageSelect.value);
-      this.currentPage = 1;
-      this.updateTable(tableContainer);
+  }
+  createFilters(container) {
+    const filterContainer = container.createEl("div", { cls: "catalog-filters" });
+    this.plugin.settings.filterFields.forEach((field) => {
+      const filterInput = filterContainer.createEl("input", {
+        type: "text",
+        placeholder: `\u0424\u0438\u043B\u044C\u0442\u0440 \u043F\u043E ${field}`,
+        cls: "catalog-filter-input"
+      });
+      filterInput.addEventListener("input", () => {
+        this.currentPage = 1;
+        this.updateTable(this.containerEl.querySelector(".catalog-table-container"));
+      });
     });
-    controls.prevButton.addEventListener("click", () => {
+  }
+  createPagination(container) {
+    const paginationContainer = container.createEl("div", { cls: "catalog-pagination" });
+    const itemsPerPageSelect = paginationContainer.createEl("select", { cls: "catalog-items-per-page" });
+    [5, 10, 20, 50, 100].forEach((value) => {
+      itemsPerPageSelect.createEl("option", { text: value.toString(), value: value.toString() });
+    });
+    itemsPerPageSelect.value = this.itemsPerPage.toString();
+    itemsPerPageSelect.addEventListener("change", (e) => {
+      this.itemsPerPage = parseInt(e.target.value);
+      this.currentPage = 1;
+      this.updateTable(this.containerEl.querySelector(".catalog-table-container"));
+    });
+    const prevButton = paginationContainer.createEl("button", { text: "\u2190", cls: "catalog-pagination-btn" });
+    prevButton.addEventListener("click", () => {
       if (this.currentPage > 1) {
         this.currentPage--;
-        this.updateTable(tableContainer);
+        this.updateTable(this.containerEl.querySelector(".catalog-table-container"));
       }
     });
-    controls.nextButton.addEventListener("click", () => {
-      const totalPages = Math.ceil(this.filterManager.getFilteredItems(this.allItems).length / this.itemsPerPage);
+    const pageInfo = paginationContainer.createEl("span", {
+      text: `\u0421\u0442\u0440\u0430\u043D\u0438\u0446\u0430 ${this.currentPage}`,
+      cls: "catalog-pagination-info"
+    });
+    const nextButton = paginationContainer.createEl("button", { text: "\u2192", cls: "catalog-pagination-btn" });
+    nextButton.addEventListener("click", () => {
+      const filteredItems = this.filterManager.getFilteredItems(this.allItems);
+      const totalPages = Math.ceil(filteredItems.length / this.itemsPerPage);
       if (this.currentPage < totalPages) {
         this.currentPage++;
-        this.updateTable(tableContainer);
+        this.updateTable(this.containerEl.querySelector(".catalog-table-container"));
       }
     });
   }
@@ -601,13 +612,52 @@ var CatalogView = class extends import_obsidian3.ItemView {
       tableContainer.innerHTML = "<p>\u041D\u0435\u0442 \u0434\u0430\u043D\u043D\u044B\u0445 \u0434\u043B\u044F \u043E\u0442\u043E\u0431\u0440\u0430\u0436\u0435\u043D\u0438\u044F</p>";
       return;
     }
-    const filteredItems = this.filterManager.getFilteredItems(this.allItems);
+    const filters = this.getFilters();
+    const filteredItems = this.filterItems(this.allItems, filters);
     console.log("\u041E\u0442\u0444\u0438\u043B\u044C\u0442\u0440\u043E\u0432\u0430\u043D\u043D\u044B\u0435 \u044D\u043B\u0435\u043C\u0435\u043D\u0442\u044B:", filteredItems);
     const paginatedItems = this.paginateItems(filteredItems);
     console.log("\u042D\u043B\u0435\u043C\u0435\u043D\u0442\u044B \u043D\u0430 \u0442\u0435\u043A\u0443\u0449\u0435\u0439 \u0441\u0442\u0440\u0430\u043D\u0438\u0446\u0435:", paginatedItems);
     this.tableRenderer.render(tableContainer, paginatedItems);
-    this.updatePaginationInfo();
+    this.updatePaginationInfo(filteredItems.length);
     this.updateColumnWidths();
+  }
+  getFilters() {
+    const filters = {};
+    this.plugin.settings.filterFields.forEach((field) => {
+      const input = this.containerEl.querySelector(`input[placeholder="\u0424\u0438\u043B\u044C\u0442\u0440 \u043F\u043E ${field}"]`);
+      if (input && input.value) {
+        filters[field] = input.value.toLowerCase();
+      }
+    });
+    return filters;
+  }
+  filterItems(items, filters) {
+    return items.filter((item) => {
+      return Object.entries(filters).every(([key, value]) => {
+        const itemValue = item[key];
+        if (Array.isArray(itemValue)) {
+          return itemValue.some((v) => v.toString().toLowerCase().includes(value));
+        } else if (typeof itemValue === "string" || typeof itemValue === "number") {
+          return itemValue.toString().toLowerCase().includes(value);
+        }
+        return false;
+      });
+    });
+  }
+  updatePaginationInfo(totalItems) {
+    const totalPages = Math.ceil(totalItems / this.itemsPerPage);
+    const pageInfo = this.containerEl.querySelector(".catalog-pagination-info");
+    if (pageInfo) {
+      pageInfo.textContent = `\u0421\u0442\u0440\u0430\u043D\u0438\u0446\u0430 ${this.currentPage} \u0438\u0437 ${totalPages}`;
+    }
+    const prevButton = this.containerEl.querySelector(".catalog-pagination-btn:first-child");
+    const nextButton = this.containerEl.querySelector(".catalog-pagination-btn:last-child");
+    if (prevButton) {
+      prevButton.disabled = this.currentPage <= 1;
+    }
+    if (nextButton) {
+      nextButton.disabled = this.currentPage >= totalPages;
+    }
   }
   updateColumnWidth(key, width) {
     this.columnWidths[key] = width;
@@ -628,14 +678,6 @@ var CatalogView = class extends import_obsidian3.ItemView {
   }
   onTableResize(entries) {
     this.updateColumnWidths();
-  }
-  updatePaginationInfo() {
-    const filteredItems = this.filterManager.getFilteredItems(this.allItems);
-    const totalPages = Math.ceil(filteredItems.length / this.itemsPerPage);
-    const pageInfo = this.containerEl.querySelector(".catalog-pagination-info");
-    if (pageInfo) {
-      pageInfo.textContent = `\u0421\u0442\u0440\u0430\u043D\u0438\u0446\u0430 ${this.currentPage} \u0438\u0437 ${totalPages}`;
-    }
   }
   paginateItems(items) {
     const start = (this.currentPage - 1) * this.itemsPerPage;
@@ -690,10 +732,14 @@ var CatalogView = class extends import_obsidian3.ItemView {
   updateSettings(newSettings) {
   }
   async reloadCatalog() {
+    console.log("\u041F\u0435\u0440\u0435\u0437\u0430\u0433\u0440\u0443\u0437\u043A\u0430 \u043A\u0430\u0442\u0430\u043B\u043E\u0433\u0430");
     this.allItems = await this.itemParser.getAllItems(this.plugin.settings.filenames);
-    const container = this.containerEl.children[1];
-    container.empty();
-    await this.renderCatalog(container);
+    const tableContainer = this.containerEl.querySelector(".catalog-table-container");
+    if (tableContainer) {
+      this.updateTable(tableContainer);
+    } else {
+      console.warn("\u041A\u043E\u043D\u0442\u0435\u0439\u043D\u0435\u0440 \u0442\u0430\u0431\u043B\u0438\u0446\u044B \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D");
+    }
   }
   getAllFields() {
     const allFields = new Set();
@@ -723,9 +769,6 @@ var CatalogView = class extends import_obsidian3.ItemView {
     if (tableContainer) {
       this.updateTable(tableContainer);
     }
-  }
-  openFilterModal() {
-    new FilterModal(this.app, this).open();
   }
   saveColumnWidths() {
     this.plugin.saveSettings();
@@ -758,37 +801,6 @@ var CatalogView = class extends import_obsidian3.ItemView {
       window.addEventListener("mouseup", stopResize);
       document.body.style.cursor = "col-resize";
     });
-  }
-};
-var FilterModal = class extends import_obsidian3.Modal {
-  constructor(app, view) {
-    super(app);
-    this.view = view;
-  }
-  onOpen() {
-    const { contentEl } = this;
-    contentEl.empty();
-    contentEl.createEl("h2", { text: "\u0424\u0438\u043B\u044C\u0442\u0440\u044B \u043A\u0430\u0442\u0430\u043B\u043E\u0433\u0430" });
-    this.view.plugin.settings.keys.forEach((key) => {
-      const filterContainer = contentEl.createEl("div");
-      filterContainer.createEl("label", { text: key });
-      filterContainer.createEl("input", {
-        type: "text",
-        placeholder: `\u0424\u0438\u043B\u044C\u0442\u0440 \u043F\u043E ${key}`
-      });
-    });
-    const applyButton = contentEl.createEl("button", { text: "\u041F\u0440\u0438\u043C\u0435\u043D\u0438\u0442\u044C" });
-    applyButton.addEventListener("click", () => {
-      this.close();
-      const tableContainer = this.view.containerEl.querySelector(".catalog-table-container");
-      if (tableContainer) {
-        this.view.updateTable(tableContainer);
-      }
-    });
-  }
-  onClose() {
-    const { contentEl } = this;
-    contentEl.empty();
   }
 };
 
